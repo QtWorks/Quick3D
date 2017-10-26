@@ -11,17 +11,36 @@ using namespace Math;
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    \class CWaypoint
+    \brief The base class for a waypoint.
+    \inmodule Quick3D
+    \sa CGeolocalized
+*/
+
+//-------------------------------------------------------------------------------------------------
+
+/*!
+    Constructs a CWaypoint with its default parameters.
+*/
 CWaypoint::CWaypoint()
 {
-    LOG_DEBUG("CWaypoint::CWaypoint()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Constructs a CWaypoint with specified parameters. \br\br
+    \a eType is the type of waypoint. \br
+    \a sName is the ID of the waypoint. \br
+    \a gGeoloc is the geo-localization of the waypoint. \br
+    \a dFrequency_MHz is the frequency of the waypoint, in megahertz. \br
+    \a bGenerated tells if the waypoint has been generated.
+*/
 CWaypoint::CWaypoint(EWaypointType eType, QString sName, CGeoloc gGeoloc, double dFrequency_MHz, bool bGenerated)
-    : m_eType(eType)
+    : CGeolocalized(gGeoloc)
+    , m_eType(eType)
     , m_sName(sName)
-    , m_gGeoloc(gGeoloc)
     , m_gEndGeoloc(gGeoloc)
     , m_dFrequency_MHz(dFrequency_MHz)
     , m_dMinimumAltitude_m(0.0)
@@ -35,13 +54,18 @@ CWaypoint::CWaypoint(EWaypointType eType, QString sName, CGeoloc gGeoloc, double
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Destroys a CWaypoint.
+*/
 CWaypoint::~CWaypoint()
 {
-    LOG_DEBUG("CWaypoint::~CWaypoint()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Sets the minimum altitude constraint to \a dValue in meters.
+*/
 void CWaypoint::setMinimumAltitude_m(double dValue)
 {
     m_dMinimumAltitude_m = dValue;
@@ -49,6 +73,9 @@ void CWaypoint::setMinimumAltitude_m(double dValue)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Sets the maximum altitude constraint to \a dValue in meters.
+*/
 void CWaypoint::setMaximumAltitude_m(double dValue)
 {
     m_dMaximumAltitude_m = dValue;
@@ -56,6 +83,9 @@ void CWaypoint::setMaximumAltitude_m(double dValue)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Sets the selected altitude to \a dValue in meters.
+*/
 void CWaypoint::setSelectedAltitude_m(double dValue)
 {
     m_dSelectedAltitude_m = dValue;
@@ -63,6 +93,9 @@ void CWaypoint::setSelectedAltitude_m(double dValue)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Sets the computed altitude to \a dValue in meters.
+*/
 void CWaypoint::setComputedAltitude_m(double dValue)
 {
     m_dComputedAltitude_m = dValue;
@@ -70,6 +103,9 @@ void CWaypoint::setComputedAltitude_m(double dValue)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Sets the computed speed to \a dValue in meters per second.
+*/
 void CWaypoint::setComputedSpeed_ms(double dValue)
 {
     m_dComputedSpeed_ms = dValue;
@@ -77,6 +113,9 @@ void CWaypoint::setComputedSpeed_ms(double dValue)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Sets the generated flag to \a bValue.
+*/
 void CWaypoint::setGenerated(bool bValue)
 {
     m_bGenerated = bValue;

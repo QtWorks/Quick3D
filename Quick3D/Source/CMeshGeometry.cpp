@@ -11,6 +11,8 @@
 
 using namespace Math;
 
+IMPLEMENT_MEMORY_MONITORED(CMeshGeometry, "CMeshGeometry")
+
 //-------------------------------------------------------------------------------------------------
 
 CMeshGeometry::CMeshGeometry(C3DScene* pScene, double dMaxDistance, bool bUseSpacePartitionning)
@@ -28,10 +30,7 @@ CMeshGeometry::CMeshGeometry(C3DScene* pScene, double dMaxDistance, bool bUseSpa
 
 CMeshGeometry::~CMeshGeometry()
 {
-    foreach (CGLMeshData* data, m_vGLMeshData)
-    {
-        delete data;
-    }
+    DELETE_VECTOR_ITEMS(m_vGLMeshData);
 
     deleteMaterials();
 }
@@ -235,7 +234,7 @@ void CMeshGeometry::checkAndUpdateGeometry()
                         if (pGLMeshData->m_iNumRenderPoints > 0 && pGLMeshData->m_iNumRenderIndices > 0)
                         {
                             /*
-                            LOG_DEBUG(QString("CMesh::updateGeometry() : Allocating %1 vertices and %2 indices for %3")
+                            LOG_METHOD_DEBUG(QString("Allocating %1 vertices and %2 indices for %3")
                                 .arg(pGLMeshData->m_iNumRenderPoints)
                                 .arg(pGLMeshData->m_iNumRenderIndices)
                                 .arg(m_sName)

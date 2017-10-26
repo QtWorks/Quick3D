@@ -121,10 +121,10 @@ public:
     //-------------------------------------------------------------------------------------------------
 
     //!
-    QSP<CComponent> getPositionTarget() { return m_rPositionTarget.component(); }
+    QSP<CComponent> positionTarget() { return m_rPositionTarget.component(); }
 
     //!
-    QSP<CComponent> getRotationTarget() { return m_rRotationTarget.component(); }
+    QSP<CComponent> rotationTarget() { return m_rRotationTarget.component(); }
 
     //-------------------------------------------------------------------------------------------------
     // Control methods
@@ -161,14 +161,14 @@ public:
     virtual void q3dEvent(CQ3DEvent* event);
 
     //-------------------------------------------------------------------------------------------------
-    // Inherited methods
+    // Overridden methods
     //-------------------------------------------------------------------------------------------------
 
     //! Returns this object's class name
     virtual QString getClassName() const Q_DECL_OVERRIDE { return ClassName_CController; }
 
     //! Loads this object's parameters
-    virtual void loadParameters(const QString& sBaseFile, CXMLNode xComponent) Q_DECL_OVERRIDE;
+    virtual void loadParameters(const QString& sBaseFile, const CXMLNode& xComponent) Q_DECL_OVERRIDE;
 
     //! Solves the links of this object
     virtual void solveLinks(C3DScene* pScene) Q_DECL_OVERRIDE;
@@ -178,6 +178,9 @@ public:
 
     //!
     virtual void update(double dDeltaTime) Q_DECL_OVERRIDE;
+
+    //! Dumps contents to a stream
+    virtual void dump(QTextStream& stream, int iIdent) Q_DECL_OVERRIDE;
 
     //-------------------------------------------------------------------------------------------------
     // Properties
@@ -195,6 +198,7 @@ protected:
     QPoint                              m_pPreviousMousePos;
     Math::CRay3                         m_rLastRay;
     bool                                m_bUseMouse;
+    bool                                m_bShiftPressed;
     bool                                m_bControlPressed;
     bool                                m_bAltPressed;
     double                              m_dMoveSpeed;

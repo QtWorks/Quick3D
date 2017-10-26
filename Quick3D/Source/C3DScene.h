@@ -8,6 +8,7 @@
 
 // qt-plus
 #include "CInterpolator.h"
+#include "CAverager.h"
 
 // Application
 #include "quick3d_global.h"
@@ -117,6 +118,9 @@ public:
     //! Sets the overlook scene flag, for debug purposes
     void setOverlookScene(bool value) { m_bOverlookScene = value; }
 
+    //!
+    void setOverlookFOV(double value) { m_dOverlookFOV = value; }
+
     //-------------------------------------------------------------------------------------------------
     // Getters
     //-------------------------------------------------------------------------------------------------
@@ -191,22 +195,25 @@ public:
     const QImage& frameBuffer() const { return m_imgFrameBuffer; }
 
     //!
-    bool editMode() { return m_bEditMode; }
+    bool editMode() const { return m_bEditMode; }
 
     //!
-    bool debugMode() { return m_DebugMode; }
+    bool debugMode() const { return m_DebugMode; }
 
     //!
-    bool frustumCheck() { return m_bFrustumCheck; }
+    bool frustumCheck() const { return m_bFrustumCheck; }
 
     //!
-    bool boundsOnly() { return m_bBoundsOnly; }
+    bool boundsOnly() const { return m_bBoundsOnly; }
 
     //!
-    bool normalsOnly() { return m_bNormalsOnly; }
+    bool normalsOnly() const { return m_bNormalsOnly; }
 
     //! Returns the overlook scene flag, for debug purposes
     bool overlookScene() const { return m_bOverlookScene; }
+
+    //!
+    double overlookFOV() const { return m_dOverlookFOV; }
 
     //-------------------------------------------------------------------------------------------------
     // Control methods
@@ -266,6 +273,9 @@ public:
     //!
     void addSegment(Math::CVector3 vStart, Math::CVector3 vEnd);
 
+    //!
+    QString debugInfo();
+
     //! Dumps contents in a stream
     virtual void dump(QTextStream& stream, int iIdent);
 
@@ -302,6 +312,7 @@ protected:
     CController*                            m_pDefaultController;
     Math::CVector3                          m_vWorldOrigin;
     QTime                                   m_tTimeOfDay;
+    CAverager<double>                       m_FPS;
     CFog                                    m_tFog;
     CInterpolator<Math::CVector4>           m_iSunColor;
     bool                                    m_bForDisplay;
@@ -321,6 +332,7 @@ protected:
     bool                                    m_bDepthComputing;
     double                                  m_dTime;
     double                                  m_dSunIntensity;
+    double                                  m_dOverlookFOV;
     QImage                                  m_imgFrameBuffer;
 
     // Shared data

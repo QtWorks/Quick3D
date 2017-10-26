@@ -4,6 +4,9 @@
 // Std
 #include "math.h"
 
+// Qt
+#include <QString>
+
 // Application
 #include "Angles.h"
 
@@ -238,6 +241,7 @@ public:
         Y += V2.Y;
         Z += V2.Z;
         W += V2.W;
+
         return *this;
     }
 
@@ -248,6 +252,7 @@ public:
         Y -= V2.Y;
         Z -= V2.Z;
         W -= V2.W;
+
         return *this;
     }
 
@@ -258,6 +263,18 @@ public:
         Y *= V2.Y;
         Z *= V2.Z;
         W *= V2.W;
+
+        return *this;
+    }
+
+    //! Returns division of this vector and \a V2
+    inline CVector4& operator /= (const CVector4& V2)
+    {
+        X /= V2.X;
+        Y /= V2.Y;
+        Z /= V2.Z;
+        W /= V2.W;
+
         return *this;
     }
 
@@ -343,6 +360,12 @@ public:
     {
         if (X == 0.0) return 0.0;
         return atan2(Y, X);
+    }
+
+    //! Returns a string representation of this vector
+    inline QString toString() const
+    {
+        return QString("<%1, %2, %3, %4>").arg(X).arg(Y).arg(Z).arg(W);
     }
 };
 }

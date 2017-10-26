@@ -32,7 +32,7 @@ CBILField::CBILField(CXMLNode xParameters, const QString& sPathToBILFiles, doubl
     , m_xParameters(xParameters)
     , m_dValueForNoData(dValueForNoData)
 {
-    LOG_DEBUG(QString("CBILField::CBILField(%1)").arg(sPathToBILFiles));
+    LOG_METHOD_DEBUG(sPathToBILFiles);
 
     // Set path to argument path if not empty, else default to application path + "/BIL"
 
@@ -70,8 +70,6 @@ CBILField::~CBILField()
 */
 void CBILField::parseBILFiles()
 {
-    LOG_DEBUG(QString("CBILField::parseBILFiles()"));
-
     // List all BIL files in path
 
     QStringList nameFilter;
@@ -85,7 +83,7 @@ void CBILField::parseBILFiles()
 
     foreach (QString sFile, lFiles)
     {
-        LOG_DEBUG(QString("CBILField::parseBILFiles() : Creating chunk for %1...").arg(sFile));
+        LOG_METHOD_DEBUG(QString("Creating chunk for %1...").arg(sFile));
 
         CBILData* pChunk = new CBILData(m_dValueForNoData);
 

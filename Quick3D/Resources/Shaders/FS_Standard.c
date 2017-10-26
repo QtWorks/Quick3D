@@ -68,8 +68,6 @@ uniform vec4            u_material_subdermal;
 uniform float           u_material_self_illum;
 uniform float           u_material_shininess;
 uniform float           u_material_metalness;
-uniform float           u_material_reflection;
-uniform float           u_material_reflection_steepness;
 uniform float           u_material_sss_factor;
 uniform float           u_material_sss_radius;
 
@@ -1158,7 +1156,8 @@ void main()
         {
             if (bool(u_normals_only))
             {
-                gl_FragColor = vec4(vo_normal, 1.0);
+                vec3 color = vec3((vo_normal.x + 1.0) * 0.5, (vo_normal.y + 1.0) * 0.5, (vo_normal.z + 1.0) * 0.5);
+                gl_FragColor = vec4(color, 1.0);
             }
             else
             {

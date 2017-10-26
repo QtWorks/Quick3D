@@ -64,7 +64,7 @@ CLight& CLight::operator = (const CLight& target)
 /*!
     Loads the properties of this light from \a xComponent.
 */
-void CLight::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CLight::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CCamera::loadParameters(sBaseFile, xComponent);
 
@@ -94,4 +94,15 @@ void CLight::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
             m_bCastShadows = (bool) xGeneralNode.attributes()[ParamName_Cast_Shadows].toInt();
         }
     }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CLight::dump(QTextStream& stream, int iIdent)
+{
+    dumpIdent(stream, iIdent, QString("[CLight]"));
+    dumpIdent(stream, iIdent, QString("Lighting distance : %1").arg(m_dLightingDistance));
+    dumpIdent(stream, iIdent, QString("Cast shadows : %1").arg(m_bCastShadows));
+
+    CCamera::dump(stream, iIdent);
 }

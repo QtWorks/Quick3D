@@ -14,6 +14,8 @@
 
 using namespace Math;
 
+IMPLEMENT_MEMORY_MONITORED(CMaterial, "CMaterial")
+
 //-------------------------------------------------------------------------------------------------
 
 double CMaterial::m_dTime = 0.0;
@@ -26,8 +28,6 @@ CMaterial::CMaterial(C3DScene* pScene, QString sName)
     , m_dSelfIllumination(0.0)
     , m_dShininess(0.0)
     , m_dMetalness(0.0)
-    , m_dReflection(0.0)
-    , m_dReflectionSteepness(0.0)
     , m_dSSSFactor(0.0)
     , m_dSSSRadius(0.02)
     , m_pShadowBuffer(nullptr)
@@ -75,7 +75,7 @@ bool CMaterial::hasAlpha() const
 
 //-------------------------------------------------------------------------------------------------
 
-void CMaterial::loadParameters(const QString& sBaseFile, CXMLNode xMaterial)
+void CMaterial::loadParameters(const QString& sBaseFile, const CXMLNode& xMaterial)
 {
     m_sName = xMaterial.attributes()[ParamName_Name];
 
@@ -88,12 +88,18 @@ void CMaterial::loadParameters(const QString& sBaseFile, CXMLNode xMaterial)
     // Lecture couleur spéculaire
     CXMLNode xSpecular = xMaterial.getNodeByTagName(ParamName_Specular);
 
-    if (xDiffuse.isEmpty() == false)
+    // Read normal color
+    CXMLNode xNormal = xMaterial.getNodeByTagName(ParamName_Normal);
+
+    if (xAmbient.isEmpty() == false)
     {
         m_cAmbient.X = xAmbient.attributes()[ParamName_r].toDouble();
         m_cAmbient.Y = xAmbient.attributes()[ParamName_g].toDouble();
         m_cAmbient.Z = xAmbient.attributes()[ParamName_b].toDouble();
+    }
 
+    if (xDiffuse.isEmpty() == false)
+    {
         m_cDiffuse.X = xDiffuse.attributes()[ParamName_r].toDouble();
         m_cDiffuse.Y = xDiffuse.attributes()[ParamName_g].toDouble();
         m_cDiffuse.Z = xDiffuse.attributes()[ParamName_b].toDouble();
@@ -122,6 +128,16 @@ void CMaterial::loadParameters(const QString& sBaseFile, CXMLNode xMaterial)
         m_cSpecular.Z = xSpecular.attributes()[ParamName_b].toDouble();
         m_dShininess = xSpecular.attributes()[ParamName_Hardness].toDouble();
         m_dMetalness = xSpecular.attributes()[ParamName_Intensity].toDouble();
+    }
+
+    if (xNormal.isEmpty() == false)
+    {
+        QString sTextureName = xNormal.attributes()[ParamName_Map];
+
+        if (sTextureName.isEmpty() == false)
+        {
+            addNormalTexture(sBaseFile, sTextureName);
+        }
     }
 }
 
@@ -197,6 +213,29 @@ void CMaterial::addDynamicDiffuseTexture(const QString& sName, const QImage& img
 
 //-------------------------------------------------------------------------------------------------
 
+void CMaterial::addNormalTexture(const QString& sBaseFile, const QString& sResourceName)
+{
+    QString sFinalResource = m_pScene->ressourcesManager()->locateResource(sBaseFile, sResourceName);
+
+    if (sFinalResource.isEmpty() == false)
+    {
+        QImage imgTexture = QImage(sFinalResource);
+        addNormalTexture(sFinalResource, imgTexture);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMaterial::addNormalTexture(const QString& sName, const QImage& imgTexture)
+{
+    if (imgTexture.width() > 0 && imgTexture.height() > 0)
+    {
+        m_vNormalTextures.append(new CTexture(m_pScene, sName, imgTexture, imgTexture.size(), m_vNormalTextures.count(), false));
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CMaterial::createShadowTexture()
 {
     if (m_pScene->forDisplay())
@@ -212,6 +251,11 @@ void CMaterial::createShadowTexture()
 void CMaterial::clearTextures()
 {
     foreach (CTexture* pTexture, m_vDiffuseTextures)
+    {
+        delete pTexture;
+    }
+
+    foreach (CTexture* pTexture, m_vNormalTextures)
     {
         delete pTexture;
     }
@@ -313,8 +357,6 @@ QGLShaderProgram* CMaterial::activate(CRenderContext* pContext)
             pProgram->setUniformValue("u_material_self_illum", (GLfloat) m_dSelfIllumination);
             pProgram->setUniformValue("u_material_shininess", (GLfloat) m_dShininess);
             pProgram->setUniformValue("u_material_metalness", (GLfloat) m_dMetalness);
-            pProgram->setUniformValue("u_material_reflection", (GLfloat) m_dReflection);
-            pProgram->setUniformValue("u_material_reflection_steepness", (GLfloat) m_dReflectionSteepness);
             pProgram->setUniformValue("u_material_sss_factor", (GLfloat) m_dSSSFactor);
             pProgram->setUniformValue("u_material_sss_radius", (GLfloat) m_dSSSRadius);
 
@@ -379,4 +421,30 @@ void CMaterial::activateShadow(CRenderContext* pContext)
 CGeoloc CMaterial::transformGeoloc(const CGeoloc& gPosition)
 {
     return gPosition;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+/*!
+    Dumps this material to \a stream using the indentation value in \a iIdent.
+*/
+void CMaterial::dump(QTextStream& stream, int iIdent)
+{
+    dumpIdent(stream, iIdent, QString("[CMaterial]"));
+    dumpIdent(stream, iIdent, QString("Name : %1").arg(m_sName));
+    dumpIdent(stream, iIdent, QString("Ambient color : %1").arg(m_cAmbient.toString()));
+    dumpIdent(stream, iIdent, QString("Diffuse color : %1").arg(m_cDiffuse.toString()));
+    dumpIdent(stream, iIdent, QString("Specular color : %1").arg(m_cSpecular.toString()));
+    dumpIdent(stream, iIdent, QString("Subdermal color : %1").arg(m_cSubdermal.toString()));
+    dumpIdent(stream, iIdent, QString("Self illumination : %1").arg(m_dSelfIllumination));
+    dumpIdent(stream, iIdent, QString("Shininess : %1").arg(m_dShininess));
+    dumpIdent(stream, iIdent, QString("Metalness : %1").arg(m_dMetalness));
+    dumpIdent(stream, iIdent, QString("SSS Factor : %1").arg(m_dSSSFactor));
+    dumpIdent(stream, iIdent, QString("SSS Radius : %1").arg(m_dSSSRadius));
+    dumpIdent(stream, iIdent, QString("IR Factor : %1").arg(m_dIRFactor));
+    dumpIdent(stream, iIdent, QString("Has alpha : %1").arg(m_bHasAlpha));
+    dumpIdent(stream, iIdent, QString("Use sky : %1").arg(m_bUseSky));
+    dumpIdent(stream, iIdent, QString("Use waves : %1").arg(m_bUseWaves));
+    dumpIdent(stream, iIdent, QString("Bill board : %1").arg(m_bBillBoard));
+    dumpIdent(stream, iIdent, QString("Lines : %1").arg(m_bLines));
 }

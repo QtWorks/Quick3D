@@ -131,7 +131,7 @@ public:
     double maxDistance() const { return m_dMaxDistance; }
 
     //-------------------------------------------------------------------------------------------------
-    // Inherited methods
+    // Overridden methods
     //-------------------------------------------------------------------------------------------------
 
     //! Returns this object's class name
@@ -141,7 +141,10 @@ public:
     virtual bool isCamera() const { return true; }
 
     //! Loads this object's parameters using the provided XML node
-    virtual void loadParameters(const QString& sBaseFile, CXMLNode xComponent) Q_DECL_OVERRIDE;
+    virtual void loadParameters(const QString& sBaseFile, const CXMLNode& xComponent) Q_DECL_OVERRIDE;
+
+    //! Dumps contents to a stream
+    virtual void dump(QTextStream& stream, int iIdent) Q_DECL_OVERRIDE;
 
     //-------------------------------------------------------------------------------------------------
     // Control methods

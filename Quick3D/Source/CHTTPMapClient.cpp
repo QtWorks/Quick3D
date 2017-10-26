@@ -6,12 +6,15 @@
 #include "CHTTPMapClient.h"
 
 //-------------------------------------------------------------------------------------------------
+// Constants
+
+#define TILE_URL "http://t0.tiles.virtualearth.net/tiles/%1.jpeg?g=1963&mkt={culture}&token={token}"
+
+//-------------------------------------------------------------------------------------------------
 
 CHTTPMapClient::CHTTPMapClient()
     : m_pReply(nullptr)
 {
-    LOG_DEBUG("CHTTPMapClient::CHTTPMapClient()");
-
     m_sTilePath = QCoreApplication::applicationDirPath() + "/Tiles";
 
     if (!QDir().exists(m_sTilePath))
@@ -24,7 +27,6 @@ CHTTPMapClient::CHTTPMapClient()
 
 CHTTPMapClient::~CHTTPMapClient()
 {
-    LOG_DEBUG("CHTTPMapClient::~CHTTPMapClient()");
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -83,11 +85,11 @@ void CHTTPMapClient::loadNextTile()
             }
             else
             {
-                m_uURL = QString("http://t0.tiles.virtualearth.net/tiles/%1.jpeg?g=1963&mkt={culture}&token={token}").arg(m_sCurrentTileName);
+                m_uURL = QString(TILE_URL).arg(m_sCurrentTileName);
 
                 m_pReply = m_tNetMan.get(QNetworkRequest(m_uURL));
 
-                LOG_DEBUG(QString("CHTTPMapClient::loadNextTile() : requested tile %1").arg(m_sCurrentTileName));
+                LOG_METHOD_DEBUG(QString("Requesting tile %1").arg(m_sCurrentTileName));
 
                 connect(m_pReply, SIGNAL(finished()), this, SLOT(httpFinished()));
                 connect(m_pReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(httpError(QNetworkReply::NetworkError)));
@@ -115,7 +117,7 @@ void CHTTPMapClient::httpFinished()
                 fImageFile.close();
             }
 
-            LOG_DEBUG(QString("CHTTPMapClient::httpFinished() : downloaded tile %1").arg(m_sCurrentTileName));
+            LOG_METHOD_DEBUG(QString("Downloaded tile %1").arg(m_sCurrentTileName));
 
             QImage image;
 
@@ -146,7 +148,7 @@ void CHTTPMapClient::httpFinished()
 
 void CHTTPMapClient::httpError(QNetworkReply::NetworkError code)
 {
-    LOG_ERROR(QString("CHTTPMapClient::httpError() : tile %1").arg(m_sCurrentTileName));
+    LOG_METHOD_DEBUG(QString("Tile %1").arg(m_sCurrentTileName));
 
     m_baIncomingData.clear();
 

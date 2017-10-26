@@ -2,9 +2,14 @@
 // Qt
 #include <QDebug>
 
+// qt-plus
+#include "CLogger.h"
+
 // Quick3D
 #include "CComponentFactory.h"
 #include "CCamera.h"
+#include "CGeoTree.h"
+#include "CWaypoint.h"
 
 // Application
 #include "CUnitTests.h"
@@ -121,4 +126,35 @@ void CUnitTests::run()
     }
 
     delete pScene;
+
+    qDebug() << "--------------------------------------------------";
+    qDebug() << "Testing CGeoTree";
+
+    CWaypoint* wp1 = new CWaypoint(wtVORDME, "WP1", CGeoloc(48.999472,  2.623806, 0.0), 0.0);
+    CWaypoint* wp2 = new CWaypoint(wtVORDME, "WP2", CGeoloc(45.600000,  3.400000, 0.0), 0.0);
+    CWaypoint* wp3 = new CWaypoint(wtVORDME, "WP3", CGeoloc(32.500000, 20.200000, 0.0), 0.0);
+    CWaypoint* wp4 = new CWaypoint(wtVORDME, "WP4", CGeoloc( 5.500000, 80.400000, 0.0), 0.0);
+
+    CGeoTree tGeoTree(2);
+    tGeoTree.append(wp1);
+    tGeoTree.append(wp2);
+    tGeoTree.append(wp3);
+    tGeoTree.append(wp4);
+
+    QFile dump("./Geotree.dump.txt");
+
+    if (dump.open(QIODevice::WriteOnly))
+    {
+        QTextStream stream(&dump);
+        tGeoTree.dump(stream, 0);
+        dump.close();
+    }
+
+    QVector<CGeolocalized*> vResult = tGeoTree.query(CGeoloc(48.5, 2.2, 0.0), 400000.0);
+    qDebug() << "vResult.count() =" << vResult.count();
+
+    delete wp1;
+    delete wp2;
+    delete wp3;
+    delete wp4;
 }

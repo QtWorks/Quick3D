@@ -19,19 +19,17 @@ CElectricalContactor::CElectricalContactor(C3DScene* pScene)
 : CElectricalComponent(pScene)
 , m_bClosed(false)
 {
-	LOG_DEBUG("CElectricalContactor::CElectricalContactor()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CElectricalContactor::~CElectricalContactor()
 {
-	LOG_DEBUG("CElectricalContactor::~CElectricalContactor()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CElectricalContactor::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CElectricalContactor::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CElectricalComponent::loadParameters(sBaseFile, xComponent);
 

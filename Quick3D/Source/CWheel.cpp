@@ -22,19 +22,17 @@ CComponent* CWheel::instantiator(C3DScene* pScene)
 CWheel::CWheel(C3DScene* pScene)
 : CPhysicalComponent(pScene)
 {
-    LOG_DEBUG("CWheel::CWheel()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CWheel::~CWheel()
 {
-    LOG_DEBUG("CWheel::~CWheel()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CWheel::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CWheel::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CPhysicalComponent::loadParameters(sBaseFile, xComponent);
 }
@@ -44,4 +42,10 @@ void CWheel::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
 void CWheel::update(double dDeltaTime)
 {
     CPhysicalComponent::update(dDeltaTime);
+
+    QSP<CComponent> pRoot = root();
+
+    if (pRoot != nullptr)
+    {
+    }
 }

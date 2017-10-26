@@ -1,7 +1,50 @@
 
 #pragma once
 
+// Qt
+#include <QExplicitlySharedDataPointer>
+
+// Application
 #include "quick3d_global.h"
+
+//-------------------------------------------------------------------------------------------------
+// Macros
+
+#define QSP                     QExplicitlySharedDataPointer
+#define QSP_CAST(T,O)           QSP<T>(dynamic_cast<T*>(O.data()))
+
+#define DELETE_VECTOR_ITEMS(v)  { for (auto d : v) { delete d; } }
+
+//-------------------------------------------------------------------------------------------------
+// Conversion factors
+
+// Meters <-> Feet
+#define FAC_METERS_TO_FEET	3.280840
+#define FAC_FEET_TO_METERS	(1.0 / FAC_METERS_TO_FEET)
+
+// Meters per second <-> Kilometers per hour
+#define FAC_MS_TO_KMH		3.600000
+#define FAC_KMH_TO_MS		(1.0 / FAC_MS_TO_KMH)
+
+// Meters per second <-> Knots
+#define FAC_MS_TO_KNOTS		1.943840
+#define FAC_KNOTS_TO_MS		(1.0 / FAC_MS_TO_KNOTS)
+
+// Meters per second <-> Feet per minute
+#define FAC_MS_TO_FPM		(FAC_METERS_TO_FEET * 60.0)
+#define FAC_FPM_TO_MS		(1.0 / FAC_MS_TO_FPM)
+
+// Kilometers per hour <-> Knots
+#define FAC_KMH_TO_KNOTS	0.539957
+#define FAC_KNOTS_TO_KMH	(1.0 / FAC_KMH_TO_KNOTS)
+
+// Meters <-> Nautical miles
+#define FAC_M_TO_NM			0.000539957
+#define FAC_NM_TO_M			(1.0 / FAC_M_TO_NM)
+
+// Kilometers <-> Nautical miles
+#define FAC_KM_TO_NM		0.539957
+#define FAC_NM_TO_KM		(1.0 / FAC_KM_TO_NM)
 
 //-------------------------------------------------------------------------------------------------
 // Component class names
@@ -34,6 +77,7 @@
 #define ClassName_CWorldTerrain             "CWorldTerrain"
 #define ClassName_CTerrain                  "CTerrain"
 #define ClassName_CWorldChunk               "CWorldChunk"
+#define ClassName_CWorldTerrainMap          "CWorldTerrainMap"
 
 #define ClassName_CArmature                 "CArmature"
 #define ClassName_CBone                     "CBone"
@@ -100,6 +144,8 @@
 #define ParamName_CenterOfMass              "CenterOfMass"
 #define ParamName_Camera1                   "Camera1"
 #define ParamName_Camera2                   "Camera2"
+#define ParamName_Camera3                   "Camera3"
+#define ParamName_Camera4                   "Camera4"
 #define ParamName_Cast_Shadows              "CastShadows"
 #define ParamName_Class                     "Class"
 #define ParamName_Closed                    "Closed"
@@ -126,6 +172,7 @@
 #define ParamName_Faces                     "Faces"
 #define ParamName_Factor                    "Factor"
 #define ParamName_FFD                       "FFD"
+#define ParamName_File                      "File"
 #define ParamName_ForceFactor               "ForceFactor"
 #define ParamName_FOV                       "FOV"
 #define ParamName_Function                  "Function"
@@ -135,6 +182,7 @@
 #define ParamName_Geoloc                    "Geoloc"
 #define ParamName_GravityFactor             "GravityFactor"
 #define ParamName_Hardness                  "Hardness"
+#define ParamName_Heading                   "Heading"
 #define ParamName_Height                    "Height"
 #define ParamName_HydraulicInput            "HydraulicInput"
 #define ParamName_Ignore                    "Ignore"
@@ -145,6 +193,7 @@
 #define ParamName_Latitude                  "Latitude"
 #define ParamName_Leaf                      "Leaf"
 #define ParamName_LeafScale                 "LeafScale"
+#define ParamName_Length                    "Length"
 #define ParamName_Level                     "Level"
 #define ParamName_Levels                    "Levels"
 #define ParamName_Longitude                 "Longitude"
@@ -159,6 +208,8 @@
 #define ParamName_MinClamp                  "MinClamp"
 #define ParamName_Minimum                   "Minimum"
 #define ParamName_Name                      "Name"
+#define ParamName_Normal                    "Normal"
+#define ParamName_Offset                    "Offset"
 #define ParamName_Operand                   "Operand"
 #define ParamName_OutputScale               "OutputScale"
 #define ParamName_Parameters                "Parameters"
@@ -185,6 +236,7 @@
 #define ParamName_Spread                    "Spread"
 #define ParamName_Sphere                    "Sphere"
 #define ParamName_Step                      "Step"
+#define ParamName_Tag                       "Tag"
 #define ParamName_Target                    "Target"
 #define ParamName_Texture                   "Texture"
 #define ParamName_Thrust                    "Thrust"
@@ -200,6 +252,7 @@
 #define ParamName_VelocityFactor            "VelocityFactor"
 #define ParamName_Vertex                    "Vertex"
 #define ParamName_Vertices                  "Vertices"
+#define ParamName_Width                     "Width"
 #define ParamName_x                         "x"
 #define ParamName_y                         "y"
 #define ParamName_z                         "z"

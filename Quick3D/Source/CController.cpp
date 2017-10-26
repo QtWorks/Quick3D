@@ -19,6 +19,7 @@ CController::CController(C3DScene* pScene)
     : CComponent(pScene)
     , m_pJoystick(nullptr)
     , m_bUseMouse(false)
+    , m_bShiftPressed(false)
     , m_bControlPressed(false)
     , m_bAltPressed(false)
     , m_dMoveSpeed(0.0)
@@ -48,7 +49,7 @@ CController::~CController()
 
 //-------------------------------------------------------------------------------------------------
 
-void CController::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CController::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CComponent::loadParameters(sBaseFile, xComponent);
 
@@ -214,9 +215,14 @@ void CController::keyPressEvent(QKeyEvent* event)
 {
     switch (event->key())
     {
+        case Qt::Key_Shift:
+            m_bShiftPressed = true;
+            break;
+
         case Qt::Key_Control:
             m_bControlPressed = true;
             break;
+
         case Qt::Key_Alt:
             m_bAltPressed = true;
             break;
@@ -229,9 +235,14 @@ void CController::keyReleaseEvent(QKeyEvent *event)
 {
     switch (event->key())
     {
+        case Qt::Key_Shift:
+            m_bShiftPressed = false;
+            break;
+
         case Qt::Key_Control:
             m_bControlPressed = false;
             break;
+
         case Qt::Key_Alt:
             m_bAltPressed = false;
             break;
@@ -323,4 +334,16 @@ void CController::joystickEvent(CJoystick* pJoystick)
 
 void CController::q3dEvent(CQ3DEvent* event)
 {
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CController::dump(QTextStream& stream, int iIdent)
+{
+    dumpIdent(stream, iIdent, QString("[CController]"));
+    dumpIdent(stream, iIdent, QString("Use mouse : %1").arg(m_bUseMouse));
+    dumpIdent(stream, iIdent, QString("Move speed : %1").arg(m_dMoveSpeed));
+    dumpIdent(stream, iIdent, QString("Force factor : %1").arg(m_dForceFactor));
+
+    CComponent::dump(stream, iIdent);
 }

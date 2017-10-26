@@ -15,19 +15,17 @@ CComponent* CTerrestrialVehicle::instantiator(C3DScene* pScene)
 CTerrestrialVehicle::CTerrestrialVehicle(C3DScene* pScene)
     : CVehicle(pScene)
 {
-    LOG_DEBUG("CTerrestrialVehicle::CTerrestrialVehicle()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CTerrestrialVehicle::~CTerrestrialVehicle()
 {
-    LOG_DEBUG("CTerrestrialVehicle::~CTerrestrialVehicle()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CTerrestrialVehicle::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CTerrestrialVehicle::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CVehicle::loadParameters(sBaseFile, xComponent);
 }

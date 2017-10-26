@@ -10,6 +10,19 @@ using namespace Math;
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    \class CAircraftController
+    \brief The base class for an aircraft controller.
+    \inmodule Quick3D
+    \sa CComponent
+*/
+
+//-------------------------------------------------------------------------------------------------
+
+/*!
+    Instantiates a new CAircraftController. \br\br
+    \a pScene is the scene containing the component.
+*/
 CComponent* CAircraftController::instantiator(C3DScene* pScene)
 {
     return new CAircraftController(pScene);
@@ -17,6 +30,10 @@ CComponent* CAircraftController::instantiator(C3DScene* pScene)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Constructs a CAircraftController with its default parameters. \br\br
+    \a pScene is the scene containing the component.
+*/
 CAircraftController::CAircraftController(C3DScene* pScene)
     : CStandardController(pScene)
     , m_bAileronLeft(false)
@@ -34,28 +51,39 @@ CAircraftController::CAircraftController(C3DScene* pScene)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Destroys a CAircraftController.
+*/
 CAircraftController::~CAircraftController()
 {
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CAircraftController::loadParameters(const QString& sBaseFile, CXMLNode xNode)
+/*!
+    Loads the properties of this component from \a xComponent. \br\br
+    \a sBaseFile is the file name from which it is loaded.
+*/
+void CAircraftController::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
-    CStandardController::loadParameters(sBaseFile, xNode);
+    CStandardController::loadParameters(sBaseFile, xComponent);
 
-    m_rLeftWingTarget.setName(xNode.attributes()["LeftWingTarget"]);
-    m_rRightWingTarget.setName(xNode.attributes()["RightWingTarget"]);
-    m_rElevatorTarget.setName(xNode.attributes()["ElevatorTarget"]);
-    m_rRudderTarget.setName(xNode.attributes()["RudderTarget"]);
-    m_rEngine1Target.setName(xNode.attributes()[ParamName_Engine1Target]);
-    m_rEngine2Target.setName(xNode.attributes()[ParamName_Engine2Target]);
-    m_rEngine3Target.setName(xNode.attributes()[ParamName_Engine1Target]);
-    m_rEngine4Target.setName(xNode.attributes()[ParamName_Engine2Target]);
+    m_rLeftWingTarget.setName(xComponent.attributes()["LeftWingTarget"]);
+    m_rRightWingTarget.setName(xComponent.attributes()["RightWingTarget"]);
+    m_rElevatorTarget.setName(xComponent.attributes()["ElevatorTarget"]);
+    m_rRudderTarget.setName(xComponent.attributes()["RudderTarget"]);
+    m_rEngine1Target.setName(xComponent.attributes()[ParamName_Engine1Target]);
+    m_rEngine2Target.setName(xComponent.attributes()[ParamName_Engine2Target]);
+    m_rEngine3Target.setName(xComponent.attributes()[ParamName_Engine3Target]);
+    m_rEngine4Target.setName(xComponent.attributes()[ParamName_Engine4Target]);
 }
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Solves the links in this component after it has been loaded from an object file (XML or JSON). \br\br
+    \a pScene is the scene containing this component.
+*/
 void CAircraftController::solveLinks(C3DScene* pScene)
 {
     CStandardController::solveLinks(pScene);
@@ -72,6 +100,10 @@ void CAircraftController::solveLinks(C3DScene* pScene)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Clears the links in this component and its children. \br\br
+    \a pScene is the scene containing this component.
+*/
 void CAircraftController::clearLinks(C3DScene* pScene)
 {
     CStandardController::clearLinks(pScene);
@@ -88,9 +120,12 @@ void CAircraftController::clearLinks(C3DScene* pScene)
 
 //-------------------------------------------------------------------------------------------------
 
-void CAircraftController::update(double dDeltaTime)
+/*!
+    Updates this component using \a dDeltaTimeS, which is the elapsed seconds since the last frame.
+*/
+void CAircraftController::update(double dDeltaTimeS)
 {
-    CController::update(dDeltaTime);
+    CController::update(dDeltaTimeS);
 
     QSP<CWing> pLeftWing = QSP_CAST(CWing, m_rLeftWingTarget.component());
     QSP<CWing> pRightWing = QSP_CAST(CWing, m_rRightWingTarget.component());
@@ -194,11 +229,11 @@ void CAircraftController::update(double dDeltaTime)
         {
             if (m_bEngine1ThrustUp)
             {
-                pEngine1->setCurrentFuelFlow_norm(pEngine1->currentFuelFlow_norm() + 0.5 * dDeltaTime);
+                pEngine1->setCurrentFuelFlow_norm(pEngine1->currentFuelFlow_norm() + 0.5 * dDeltaTimeS);
             }
             else if (m_bEngine1ThrustDown)
             {
-                pEngine1->setCurrentFuelFlow_norm(pEngine1->currentFuelFlow_norm() - 0.5 * dDeltaTime);
+                pEngine1->setCurrentFuelFlow_norm(pEngine1->currentFuelFlow_norm() - 0.5 * dDeltaTimeS);
             }
         }
 
@@ -206,11 +241,11 @@ void CAircraftController::update(double dDeltaTime)
         {
             if (m_bEngine2ThrustUp)
             {
-                pEngine2->setCurrentFuelFlow_norm(pEngine2->currentFuelFlow_norm() + 0.5 * dDeltaTime);
+                pEngine2->setCurrentFuelFlow_norm(pEngine2->currentFuelFlow_norm() + 0.5 * dDeltaTimeS);
             }
             else if (m_bEngine2ThrustDown)
             {
-                pEngine2->setCurrentFuelFlow_norm(pEngine2->currentFuelFlow_norm() - 0.5 * dDeltaTime);
+                pEngine2->setCurrentFuelFlow_norm(pEngine2->currentFuelFlow_norm() - 0.5 * dDeltaTimeS);
             }
         }
     }
@@ -218,6 +253,9 @@ void CAircraftController::update(double dDeltaTime)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Handles the key press \a event.
+*/
 void CAircraftController::keyPressEvent(QKeyEvent* event)
 {
     CStandardController::keyPressEvent(event);
@@ -230,56 +268,73 @@ void CAircraftController::keyPressEvent(QKeyEvent* event)
         case Qt::Key_D:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_AileronRight, CQ3DEvent::Press));
             break;
+
         case Qt::Key_Q:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_AileronLeft, CQ3DEvent::Press));
             break;
+
         case Qt::Key_S:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_NoseUp, CQ3DEvent::Press));
             break;
+
         case Qt::Key_Z:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_NoseDown, CQ3DEvent::Press));
             break;
+
         case Qt::Key_C:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_RudderRight, CQ3DEvent::Press));
             break;
+
         case Qt::Key_W:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_RudderLeft, CQ3DEvent::Press));
             break;
+
         case Qt::Key_PageUp:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_Engine1ThrustUp, CQ3DEvent::Press));
             generateQ3DEvent(CQ3DEvent(Q3DEvent_Engine2ThrustUp, CQ3DEvent::Press));
             break;
+
         case Qt::Key_PageDown:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_Engine1ThrustDown, CQ3DEvent::Press));
             generateQ3DEvent(CQ3DEvent(Q3DEvent_Engine2ThrustDown, CQ3DEvent::Press));
             break;
+
         case Qt::Key_8:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookFront, CQ3DEvent::Press));
             break;
+
         case Qt::Key_9:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookFrontRight, CQ3DEvent::Press));
             break;
+
         case Qt::Key_6:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookRight, CQ3DEvent::Press));
             break;
+
         case Qt::Key_3:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookBackRight, CQ3DEvent::Press));
             break;
+
         case Qt::Key_2:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookBack, CQ3DEvent::Press));
             break;
+
         case Qt::Key_1:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookBackLeft, CQ3DEvent::Press));
             break;
+
         case Qt::Key_4:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookLeft, CQ3DEvent::Press));
             break;
+
         case Qt::Key_7:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookFrontLeft, CQ3DEvent::Press));
             break;
+
         case Qt::Key_5:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_LookFrontDown, CQ3DEvent::Press));
             break;
+
         case Qt::Key_Dollar:
             if (pLeftWing && pRightWing)
             {
@@ -287,6 +342,7 @@ void CAircraftController::keyPressEvent(QKeyEvent* event)
                 pRightWing->setFlapsPosition_norm(pRightWing->flapsPosition_norm() + 0.2);
             }
             break;
+
         case Qt::Key_Asterisk:
             if (pLeftWing && pRightWing)
             {
@@ -299,6 +355,9 @@ void CAircraftController::keyPressEvent(QKeyEvent* event)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Handles the key release \a event.
+*/
 void CAircraftController::keyReleaseEvent(QKeyEvent *event)
 {
     CStandardController::keyReleaseEvent(event);
@@ -308,25 +367,32 @@ void CAircraftController::keyReleaseEvent(QKeyEvent *event)
         case Qt::Key_D:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_AileronRight, CQ3DEvent::Release));
             break;
+
         case Qt::Key_Q:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_AileronLeft, CQ3DEvent::Release));
             break;
+
         case Qt::Key_S:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_NoseUp, CQ3DEvent::Release));
             break;
+
         case Qt::Key_Z:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_NoseDown, CQ3DEvent::Release));
             break;
+
         case Qt::Key_C:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_RudderRight, CQ3DEvent::Release));
             break;
+
         case Qt::Key_W:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_RudderLeft, CQ3DEvent::Release));
             break;
+
         case Qt::Key_PageUp:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_Engine1ThrustUp, CQ3DEvent::Release));
             generateQ3DEvent(CQ3DEvent(Q3DEvent_Engine2ThrustUp, CQ3DEvent::Release));
             break;
+
         case Qt::Key_PageDown:
             generateQ3DEvent(CQ3DEvent(Q3DEvent_Engine1ThrustDown, CQ3DEvent::Release));
             generateQ3DEvent(CQ3DEvent(Q3DEvent_Engine2ThrustDown, CQ3DEvent::Release));
@@ -336,6 +402,9 @@ void CAircraftController::keyReleaseEvent(QKeyEvent *event)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Handles the Quick3D \a event.
+*/
 void CAircraftController::q3dEvent(CQ3DEvent* event)
 {
     CStandardController::q3dEvent(event);

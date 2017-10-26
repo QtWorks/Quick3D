@@ -22,19 +22,17 @@ CComponent* CVegetationGenerator::instantiator(C3DScene* pScene)
 CVegetationGenerator::CVegetationGenerator(C3DScene* pScene)
 : CGeometryGenerator(pScene)
 {
-    LOG_DEBUG("CVegetationGenerator::CVegetationGenerator()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CVegetationGenerator::~CVegetationGenerator()
 {
-    LOG_DEBUG("CVegetationGenerator::~CVegetationGenerator()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CVegetationGenerator::loadParameters(const QString& sBaseFile, CXMLNode xVegetationNode, CXMLNode xFunctions)
+void CVegetationGenerator::loadParameters(const QString& sBaseFile, const CXMLNode& xVegetationNode, CXMLNode xFunctions)
 {
     CGeometryGenerator::loadParameters(sBaseFile, xVegetationNode, xFunctions);
 
@@ -173,21 +171,6 @@ void CVegetationGenerator::generate(QSP<CWorldChunk> pChunk)
                         )
                 {
                     CGeoloc gPosition(dLat, dLon, 0.0);
-                    // CVector3 vPosition = gPosition.toVector3();
-
-                    /*
-                    CVector3 vLatDisplace = (vPosition + CVector3(iVegetIndex, iVegetIndex, iVegetIndex)) * 0.0001;
-                    CVector3 vLonDisplace = (vPosition - CVector3(iVegetIndex, iVegetIndex, iVegetIndex)) * 0.0002;
-
-                    double dLatNoise = perlin->getNoise(vLatDisplace);
-                    double dLonNoise = perlin->getNoise(vLonDisplace);
-
-                    gPosition.Latitude += dLatNoise * (dSpread * 0.25);
-                    gPosition.Longitude += dLonNoise * (dSpread * 0.25);
-                    */
-
-                    // gPosition.Latitude += (((double) qrand() / (double) RAND_MAX) - 0.5) * dSpread;
-                    // gPosition.Longitude += (((double) qrand() / (double) RAND_MAX) - 0.5) * dSpread;
 
                     double dLandscapeValue = pVegetation->m_pFunction->process(perlin, gPosition.toVector3(), CAxis());
 

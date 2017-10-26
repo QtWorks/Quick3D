@@ -1,4 +1,7 @@
 
+// qt-plus
+#include "CLogger.h"
+
 // Application
 #include "CQ3DConstants.h"
 #include "CRessourcesManager.h"
@@ -7,7 +10,9 @@
 #include "CBuildingGenerator.h"
 #include "CTreeGenerator.h"
 #include "CPerlin.h"
+#include "CAtmosphere.h"
 #include "COBJLoader.h"
+#include "CQ3DLoader.h"
 #include "CComponentFactory.h"
 #include "CPluginLoader.h"
 
@@ -24,6 +29,7 @@
 #include "CBasicAnimator.h"
 #include "CSkyBox.h"
 #include "CWorldTerrain.h"
+#include "CWorldTerrainMap.h"
 #include "CVegetationGenerator.h"
 #include "CMesh.h"
 #include "CArmature.h"
@@ -53,10 +59,6 @@
 
 //-------------------------------------------------------------------------------------------------
 
-QMap<QString, MComponentInstantiator> CComponentFactory::s_vComponentInstantiators;
-
-//-------------------------------------------------------------------------------------------------
-
 CComponentFactory::CComponentFactory()
 {
 }
@@ -68,13 +70,17 @@ CComponentFactory::~CComponentFactory()
     CWorkerManager::killInstance();
     CComponentLoader::killInstance();
     COBJLoader::killInstance();
+    CQ3DLoader::killInstance();
     CPerlin::killInstance();
+    CAtmosphere::killInstance();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CComponentFactory::registerCoreComponents()
 {
+    LOG_METHOD_DEBUG("Registering Quick3D components");
+
     registerComponent(ClassName_CComponent, CComponent::instantiator);
     registerComponent(ClassName_CPhysicalComponent, CPhysicalComponent::instantiator);
     registerComponent(ClassName_CCamera, CCamera::instantiator);
@@ -88,6 +94,7 @@ void CComponentFactory::registerCoreComponents()
     registerComponent(ClassName_CBasicAnimator, CBasicAnimator::instantiator);
     registerComponent(ClassName_CSkyBox, CSkyBox::instantiator);
     registerComponent(ClassName_CWorldTerrain, CWorldTerrain::instantiator);
+    registerComponent(ClassName_CWorldTerrainMap, CWorldTerrainMap::instantiator);
     registerComponent(ClassName_CVegetationGenerator, CVegetationGenerator::instantiator);
 
     registerComponent(ClassName_CMesh, CMesh::instantiator);
@@ -123,16 +130,16 @@ void CComponentFactory::registerCoreComponents()
 
 void CComponentFactory::registerComponent(QString sClassName, MComponentInstantiator pInstantiator)
 {
-    s_vComponentInstantiators[sClassName] = pInstantiator;
+    m_vComponentInstantiators[sClassName] = pInstantiator;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CComponent* CComponentFactory::instantiateComponent(QString sClassName, C3DScene* pScene)
 {
-    if (s_vComponentInstantiators.contains(sClassName))
+    if (m_vComponentInstantiators.contains(sClassName))
     {
-        return s_vComponentInstantiators[sClassName](pScene);
+        return m_vComponentInstantiators[sClassName](pScene);
     }
 
     return nullptr;

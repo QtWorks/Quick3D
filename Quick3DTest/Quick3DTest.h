@@ -89,6 +89,7 @@ private slots:
     void onShaderQualityChanged(int iValue);
     void onTerrainResChanged(int iValue);
     void onMoveSpeedChanged(int iValue);
+    void onOverlookFOVChanged(int iValue);
     void onViews1IndexChanged(const QString&);
     void onControllableIndexChanged(const QString& sName);
     void onResetClicked();
@@ -97,6 +98,7 @@ private slots:
     void onNormalsOnlyClicked();
     void onDepthClicked();
     void onOverlookClicked();
+    void onEditClicked();
     void onResize();
 
     //-------------------------------------------------------------------------------------------------
@@ -109,7 +111,6 @@ protected:
     CGLWidgetScene*                 m_pScene;
     CView*                          m_pView;
     QTimer                          m_tTimer;
-    CAverager<double>               m_FPS;
     QDateTime                       m_tPreviousTime;
     QString                         m_sExportPath;
     bool                            m_bProcessEvents;

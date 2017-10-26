@@ -22,19 +22,17 @@ CComponent* CEngineGenerator::instantiator(C3DScene* pScene)
 CEngineGenerator::CEngineGenerator(C3DScene* pScene)
     : CGenerator(pScene)
 {
-    LOG_DEBUG("CEngineGenerator::CEngineGenerator()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CEngineGenerator::~CEngineGenerator()
 {
-    LOG_DEBUG("CEngineGenerator::~CEngineGenerator()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CEngineGenerator::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CEngineGenerator::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CGenerator::loadParameters(sBaseFile, xComponent);
 

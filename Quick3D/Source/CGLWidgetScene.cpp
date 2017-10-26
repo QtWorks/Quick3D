@@ -23,8 +23,6 @@ CGLWidgetScene::CGLWidgetScene(bool bForDisplay)
     : QGLWidget(QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::StencilBuffer))
     , C3DScene(bForDisplay)
 {
-    LOG_DEBUG("CGLWidgetScene::CGLWidgetScene()");
-
     makeCurrentRenderingContext();
 
     if (m_bForDisplay)
@@ -47,7 +45,6 @@ CGLWidgetScene::CGLWidgetScene(bool bForDisplay)
 
 CGLWidgetScene::~CGLWidgetScene()
 {
-    LOG_DEBUG("CGLWidgetScene::~CGLWidgetScene()");
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -98,7 +95,7 @@ void CGLWidgetScene::paintGL()
         }
 
         //-------------------------------------------------------------------------------------------------
-        // Récupération du frame buffer
+        // Get the frame buffer
 
         bool bGrabFrame = false;
 
@@ -122,7 +119,7 @@ void CGLWidgetScene::paintGL()
 
 void CGLWidgetScene::init(QVector<QSP<CComponent> > vComponents)
 {
-    LOG_DEBUG("CGLWidgetScene::init()");
+    LOG_METHOD_DEBUG("");
 
     if (m_bForDisplay)
     {
@@ -138,7 +135,7 @@ void CGLWidgetScene::init(QVector<QSP<CComponent> > vComponents)
 
 void CGLWidgetScene::initShaders()
 {
-    LOG_DEBUG("CGLWidgetScene::initShaders()");
+    LOG_METHOD_DEBUG("");
 
     m_vShaders->clear();
 
@@ -255,9 +252,7 @@ void CGLWidgetScene::setupEnvironment(CRenderContext* pContext, QGLShaderProgram
 
         // Lights
 
-        // pProgram->setUniformValue("u_global_ambient", QVector3D(0.2, 0.2, 0.3));
         pProgram->setUniformValue("u_global_ambient", QVector3D(0.05, 0.05, 0.15));
-
         pProgram->setUniformValue("u_shadow_enable", u_shadow_enable);
 
         pProgram->setUniformValue("u_num_lights", (GLint) iOpenGLLightIndex);

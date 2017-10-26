@@ -20,14 +20,12 @@ CHydraulicComponent::CHydraulicComponent(C3DScene* pScene)
     : CComponent(pScene)
     , m_dPressure_norm(0.0)
 {
-    LOG_DEBUG("CHydraulicComponent::CHydraulicComponent()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CHydraulicComponent::~CHydraulicComponent()
 {
-    LOG_DEBUG("CHydraulicComponent::~CHydraulicComponent()");
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -39,7 +37,7 @@ double CHydraulicComponent::pressure_norm() const
 
 //-------------------------------------------------------------------------------------------------
 
-void CHydraulicComponent::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CHydraulicComponent::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CComponent::loadParameters(sBaseFile, xComponent);
 

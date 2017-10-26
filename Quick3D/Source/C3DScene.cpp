@@ -59,7 +59,7 @@ C3DScene::C3DScene(bool bForDisplay)
     , m_dShaderQuality(0.5)
     , m_pRain(nullptr)
     , m_tTimeOfDay(12, 0, 0)
-    , m_dTime(0.0)
+    , m_FPS(100)
     , m_dWindLevel(0.5)
     , m_bRenderingShadows(false)
     , m_bforceWideFOV(false)
@@ -67,9 +67,10 @@ C3DScene::C3DScene(bool bForDisplay)
     , m_bForceIR(false)
     , m_bStreamView(false)
     , m_bDepthComputing(false)
+    , m_dTime(0.0)
+    , m_dSunIntensity(0.0)
+    , m_dOverlookFOV(90.0)
 {
-    LOG_DEBUG("C3DScene::C3DScene()");
-
     m_pSegments = QSP<CMeshGeometry>(new CMeshGeometry(this));
 }
 
@@ -80,8 +81,6 @@ C3DScene::C3DScene(bool bForDisplay)
 */
 C3DScene::~C3DScene()
 {
-    LOG_DEBUG("C3DScene::~C3DScene()");
-
     clearComponents();
     clearViewports();
 
@@ -149,7 +148,7 @@ void C3DScene::clearViewports()
 */
 void C3DScene::init(QVector<QSP<CComponent> > vComponents)
 {
-    LOG_DEBUG("C3DScene::init()");
+    LOG_METHOD_DEBUG("");
 
     //-----------------------------------------------
     // Init fog and sun color
@@ -166,11 +165,6 @@ void C3DScene::init(QVector<QSP<CComponent> > vComponents)
     m_iSunColor.addValue( 1.00, CVector4(1.4, 1.4, 1.2, 1.0));
 
     //-----------------------------------------------
-    // Create particles
-
-    // m_pRain = new CRain(this);
-
-    //-----------------------------------------------
     // Assign components
 
     m_vComponents = vComponents;
@@ -178,33 +172,6 @@ void C3DScene::init(QVector<QSP<CComponent> > vComponents)
     foreach(QSP<CComponent> pComponent, m_vComponents)
     {
         pComponent->addItems(this);
-    }
-
-    //-----------------------------------------------
-    // Add sun
-
-    QVector<QSP<CLight> > vLights = lights();
-    bool bFoundSun = false;
-
-    foreach (QSP<CLight> pLight, vLights)
-    {
-        if (pLight->tag() == "SUN")
-        {
-            bFoundSun = true;
-            break;
-        }
-    }
-
-    if (bFoundSun == false)
-    {
-        QSP<CLight> pLight = QSP<CLight>(new CLight(this));
-
-        pLight->setName("SUN");
-        pLight->setTag("SUN");
-        pLight->setCastShadows(true);
-        pLight->setVerticalFOV(10.0);
-
-        m_vComponents.append(pLight);
     }
 
     //-----------------------------------------------
@@ -231,7 +198,7 @@ void C3DScene::init(QVector<QSP<CComponent> > vComponents)
 */
 void C3DScene::initShaders()
 {
-    LOG_DEBUG("C3DScene::initShaders()");
+    LOG_METHOD_DEBUG("");
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -464,8 +431,9 @@ void C3DScene::getLightsByTagRecurse(QVector<QSP<CLight> >& vLights, const QStri
 */
 void C3DScene::updateScene(double dDeltaTimeS)
 {
-    if (dDeltaTimeS < 0.0) dDeltaTimeS = 0.0;
-    if (dDeltaTimeS > 1.0) dDeltaTimeS = 1.0;
+    m_FPS.append(1.0 / dDeltaTimeS);
+
+    dDeltaTimeS = Angles::clipDouble(dDeltaTimeS, 0.0, 1.0);
 
     if (m_bEditMode == false)
     {
@@ -477,7 +445,7 @@ void C3DScene::updateScene(double dDeltaTimeS)
         m_pController->update(dDeltaTimeS);
     }
 
-    if (m_bEditMode)
+    if (m_bEditMode == true)
     {
         dDeltaTimeS = 0.0;
     }
@@ -692,13 +660,80 @@ RayTracingResult C3DScene::intersectRecurse(QSP<CComponent> pComponent, const Ma
 */
 void C3DScene::addSegment(Math::CVector3 vStart, Math::CVector3 vEnd)
 {
-    if (m_pSegments->vertices().count() > 400) return;
+    if (m_pSegments->vertices().count() > 1000) return;
 
     if (m_bEditMode == false)
     {
         m_pSegments->vertices().append(CVertex(vStart - m_vWorldOrigin));
         m_pSegments->vertices().append(CVertex(vEnd - m_vWorldOrigin));
     }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+QString C3DScene::debugInfo()
+{
+    CGeoloc ControlledGeoloc;
+    CVector3 ControlledRotation;
+    CVector3 ControledVelocity;
+    CVector3 ControledTorque;
+    double dSpeedMS = 0.0;
+
+    if (m_pController != nullptr && m_pController->positionTarget() != nullptr)
+    {
+        QSP<CPhysicalComponent> pPhysical = QSP_CAST(CPhysicalComponent, m_pController->positionTarget()->root());
+
+        if (pPhysical != nullptr)
+        {
+            ControlledGeoloc = pPhysical->geoloc();
+            ControledVelocity = pPhysical->velocity_ms();
+            ControledTorque = pPhysical->angularVelocity_rs();
+            dSpeedMS = ControledVelocity.magnitude();
+        }
+    }
+
+    if (m_pController != nullptr && m_pController->rotationTarget() != nullptr)
+    {
+        QSP<CPhysicalComponent> pPhysical = QSP_CAST(CPhysicalComponent, m_pController->rotationTarget()->root());
+
+        if (pPhysical != nullptr)
+        {
+            ControlledRotation = pPhysical->rotation();
+        }
+    }
+
+    return QString(
+                "FPS %1 - LLA (%2, %3, %4) Rotation (%5, %6, %7) Kts %8 Velocity (%9, %10, %11) Torque (%12, %13, %14) \n"
+                "Render : meshes %15 polys %16 chunks %17 \n"
+                "Components %18, chunks %19, terrains %20, bmi %21 \n"
+                "Allocated bytes : %22 \n"
+                )
+            .arg((int) m_FPS.getAverage())
+            .arg(QString::number(ControlledGeoloc.Latitude, 'f', 6))
+            .arg(QString::number(ControlledGeoloc.Longitude, 'f', 6))
+            .arg(QString::number(ControlledGeoloc.Altitude, 'f', 1))
+            .arg(QString::number(Math::Angles::toDeg(ControlledRotation.X), 'f', 2))
+            .arg(QString::number(Math::Angles::toDeg(ControlledRotation.Y), 'f', 2))
+            .arg(QString::number(Math::Angles::toDeg(ControlledRotation.Z), 'f', 2))
+            .arg(QString::number(dSpeedMS * FAC_MS_TO_KNOTS, 'f', 1))
+            .arg(QString::number(ControledVelocity.X, 'f', 2))
+            .arg(QString::number(ControledVelocity.Y, 'f', 2))
+            .arg(QString::number(ControledVelocity.Z, 'f', 2))
+            .arg(QString::number(Math::Angles::toDeg(ControledTorque.X), 'f', 2))
+            .arg(QString::number(Math::Angles::toDeg(ControledTorque.Y), 'f', 2))
+            .arg(QString::number(Math::Angles::toDeg(ControledTorque.Z), 'f', 2))
+
+            .arg(m_tStatistics.m_iNumMeshesDrawn)
+            .arg(m_tStatistics.m_iNumPolysDrawn)
+            .arg(m_tStatistics.m_iNumChunksDrawn)
+
+            .arg(CComponent::getNumComponents())
+            .arg(CComponent::componentCounter()[ClassName_CWorldChunk])
+            .arg(CComponent::componentCounter()[ClassName_CTerrain])
+            .arg(CComponent::componentCounter()[ClassName_CBoundedMeshInstances])
+
+            .arg(CMemoryMonitor::getInstance()->allocatedBytes())
+            ;
 }
 
 //-------------------------------------------------------------------------------------------------

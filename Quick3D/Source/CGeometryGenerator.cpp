@@ -11,18 +11,16 @@
 CGeometryGenerator::CGeometryGenerator(C3DScene* pScene)
 : CComponent(pScene)
 {
-    LOG_DEBUG("CGeometryGenerator::CGeometryGenerator()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CGeometryGenerator::~CGeometryGenerator()
 {
-    LOG_DEBUG("CGeometryGenerator::~CGeometryGenerator()");
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CGeometryGenerator::loadParameters(const QString& sBaseFile, CXMLNode xComponent, CXMLNode xFunctions)
+void CGeometryGenerator::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent, CXMLNode xFunctions)
 {
 }

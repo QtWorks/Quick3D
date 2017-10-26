@@ -1,23 +1,14 @@
 
 #pragma once
 
-// Qt
-#include <QString>
-#include <QVector>
-
-// qt-plus
-#include "CSingleton.h"
-
 // Application
 #include "quick3d_global.h"
-#include "ComponentInstantiator.h"
+#include "CGeoloc.h"
 
 //-------------------------------------------------------------------------------------------------
 
-class QUICK3D_EXPORT CComponentFactory : public CSingleton<CComponentFactory>
+class QUICK3D_EXPORT CGeolocalized
 {
-    friend class CSingleton<CComponentFactory>;
-
 public:
 
     //-------------------------------------------------------------------------------------------------
@@ -25,23 +16,27 @@ public:
     //-------------------------------------------------------------------------------------------------
 
     //!
-    CComponentFactory();
+    CGeolocalized();
 
     //!
-    virtual ~CComponentFactory();
+    CGeolocalized(const CGeoloc& gGeoloc);
+
+    //!
+    virtual ~CGeolocalized();
 
     //-------------------------------------------------------------------------------------------------
-    // Control methods
+    // Setters
     //-------------------------------------------------------------------------------------------------
 
-    //! Enregistre les composants du noyau
-    void registerCoreComponents();
+    //! Sets the object's geo-location
+    virtual void setGeoloc(CGeoloc gGeoloc);
 
-    //! Enregistre un composant
-    void registerComponent(QString sClassName, MComponentInstantiator pInstantiator);
+    //-------------------------------------------------------------------------------------------------
+    // Getters
+    //-------------------------------------------------------------------------------------------------
 
-    //! Instancie un composant selon son nom de classe pour la scène donnée
-    CComponent* instantiateComponent(QString sClassName, C3DScene* pScene);
+    //! Returns the object's geo-location
+    virtual CGeoloc geoloc() const;
 
     //-------------------------------------------------------------------------------------------------
     // Properties
@@ -49,5 +44,5 @@ public:
 
 protected:
 
-    QMap<QString, MComponentInstantiator>    m_vComponentInstantiators;
+    CGeoloc     m_gGeoloc;      // Object's geo-location
 };

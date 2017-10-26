@@ -36,12 +36,9 @@ Quick3DTest::Quick3DTest(QString sSceneFileName, QWidget *parent, Qt::WFlags fla
     : QMainWindow(parent, flags)
     #endif
     , m_tTimer(this)
-    , m_FPS(100)
     , m_bProcessEvents(true)
     , m_bRun(true)
 {
-    LOG_DEBUG("Quick3DTest::Quick3DTest()");
-
     // CConsoleBoard::getInstance()->start();
 
     ui.setupUi(this);
@@ -66,6 +63,7 @@ Quick3DTest::Quick3DTest(QString sSceneFileName, QWidget *parent, Qt::WFlags fla
     connect(ui.m_sShaderQuality, SIGNAL(valueChanged(int)), this, SLOT(onShaderQualityChanged(int)));
     connect(ui.m_sTerrainRes, SIGNAL(valueChanged(int)), this, SLOT(onTerrainResChanged(int)));
     connect(ui.m_sMoveSpeed, SIGNAL(valueChanged(int)), this, SLOT(onMoveSpeedChanged(int)));
+    connect(ui.m_sOverlookFOV, SIGNAL(valueChanged(int)), this, SLOT(onOverlookFOVChanged(int)));
 
     connect(ui.m_chkRain, SIGNAL(clicked()), this, SLOT(onRainClicked()));
     connect(ui.m_chkWideFOV, SIGNAL(clicked()), this, SLOT(onWideFOVClicked()));
@@ -79,6 +77,7 @@ Quick3DTest::Quick3DTest(QString sSceneFileName, QWidget *parent, Qt::WFlags fla
     connect(ui.m_chkNormalsOnly, SIGNAL(clicked()), this, SLOT(onNormalsOnlyClicked()));
     connect(ui.m_chkDepth, SIGNAL(clicked()), this, SLOT(onDepthClicked()));
     connect(ui.m_chkOverlook, SIGNAL(clicked()), this, SLOT(onOverlookClicked()));
+    connect(ui.m_chkEdit, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
     connect(ui.m_bReset, SIGNAL(clicked()), this, SLOT(onResetClicked()));
 
@@ -100,8 +99,6 @@ Quick3DTest::Quick3DTest(QString sSceneFileName, QWidget *parent, Qt::WFlags fla
 
 Quick3DTest::~Quick3DTest()
 {
-    LOG_DEBUG("Quick3DTest::~Quick3DTest()");
-
     delete m_pScene;
 
     CComponentFactory::killInstance();
@@ -111,7 +108,7 @@ Quick3DTest::~Quick3DTest()
 
 void Quick3DTest::loadScene(QString sFileName)
 {
-    LOG_DEBUG("Quick3DTest::Quick3DTest() : instanciating scene...");
+    LOG_METHOD_DEBUG("Instanciating scene...");
 
     m_pScene->clear();
 
@@ -121,7 +118,7 @@ void Quick3DTest::loadScene(QString sFileName)
     //-----------------------------------------------
     // Load components
 
-    LOG_DEBUG("Quick3DTest::Quick3DTest() : loading components...");
+    LOG_METHOD_DEBUG("Loading components...");
 
     QVector<QSP<CComponent> > vComponents = CComponentLoader::getInstance()->load(sFileName, m_pScene);
 
@@ -250,75 +247,10 @@ void Quick3DTest::onTimer()
         double dDeltaTime = (double) m_tPreviousTime.msecsTo(tCurrentTime) / 1000.0;
         m_tPreviousTime = tCurrentTime;
 
-        m_FPS.append(1.0 / dDeltaTime);
-
         m_pScene->updateScene(dDeltaTime);
         m_pView->update(dDeltaTime);
 
-        CGeoloc ViewGeoloc;
-        CVector3 ViewRotation;
-        CVector3 ControledVelocity;
-        CVector3 ControledTorque;
-        CVector3 Acceleration;
-        CVector3 TorqueAcceleration;
-        double dSpeedMS = 0.0;
-
-        if (m_pScene->controller() != nullptr && m_pScene->controller()->getPositionTarget())
-        {
-            QSP<CPhysicalComponent> pPhysical = QSP_CAST(CPhysicalComponent, m_pScene->controller()->getPositionTarget()->root());
-
-            if (pPhysical != nullptr)
-            {
-                ViewGeoloc = pPhysical->geoloc();
-                ControledVelocity = pPhysical->velocity_ms();
-                ControledTorque = pPhysical->angularVelocity_rs();
-                dSpeedMS = ControledVelocity.magnitude();
-            }
-        }
-
-        if (m_pScene->controller() != nullptr && m_pScene->controller()->getRotationTarget())
-        {
-            QSP<CPhysicalComponent> pPhysical = QSP_CAST(CPhysicalComponent, m_pScene->controller()->getPositionTarget()->root());
-
-            if (pPhysical != nullptr)
-            {
-                ViewRotation = pPhysical->rotation();
-            }
-        }
-
-        QString sInfo = QString(
-                    "FPS %1 - LLA (%2, %3, %4) Rotation (%5, %6, %7) Kts %8 \n"
-                    "Physics Vel (%9, %10, %11) Torque (%12, %13, %14) \n"
-                    "Drawn : meshes %15 polys %16 chunks %17 frustum %18 (Existing: components %19, chunks %20, terrains %21) \n"
-                    )
-                .arg((int) m_FPS.getAverage())
-                .arg(QString::number(ViewGeoloc.Latitude, 'f', 6))
-                .arg(QString::number(ViewGeoloc.Longitude, 'f', 6))
-                .arg(QString::number(ViewGeoloc.Altitude, 'f', 1))
-
-                .arg(QString::number(Math::Angles::toDeg(ViewRotation.X), 'f', 2))
-                .arg(QString::number(Math::Angles::toDeg(ViewRotation.Y), 'f', 2))
-                .arg(QString::number(Math::Angles::toDeg(ViewRotation.Z), 'f', 2))
-
-                .arg(QString::number(dSpeedMS * 1.9438444924406046, 'f', 1))
-
-                .arg(QString::number(ControledVelocity.X, 'f', 2))
-                .arg(QString::number(ControledVelocity.Y, 'f', 2))
-                .arg(QString::number(ControledVelocity.Z, 'f', 2))
-                .arg(QString::number(Math::Angles::toDeg(ControledTorque.X), 'f', 2))
-                .arg(QString::number(Math::Angles::toDeg(ControledTorque.Y), 'f', 2))
-                .arg(QString::number(Math::Angles::toDeg(ControledTorque.Z), 'f', 2))
-
-                .arg(m_pScene->m_tStatistics.m_iNumMeshesDrawn)
-                .arg(m_pScene->m_tStatistics.m_iNumPolysDrawn)
-                .arg(m_pScene->m_tStatistics.m_iNumChunksDrawn)
-                .arg(m_pScene->m_tStatistics.m_iNumFrustumTests)
-                .arg(CComponent::getNumComponents())
-                .arg(CComponent::componentCounter()[ClassName_CWorldChunk])
-                .arg(CComponent::componentCounter()[ClassName_CTerrain])
-                ;
-
-        ui.m_lInfo->setText(sInfo);
+        ui.m_lInfo->setText(m_pScene->debugInfo());
     }
 
     m_tTimer.start();
@@ -469,7 +401,7 @@ void Quick3DTest::onGenerateMatrixClicked()
             dump.close();
         }
 
-        // Calcul de la matrice panoramique
+        // Compute panoramic matrix
 
         QVector<CGeoZone> vZones;
         QVector<double> vDepth;
@@ -587,6 +519,13 @@ void Quick3DTest::onMoveSpeedChanged(int iValue)
     {
         m_pScene->controller()->setMoveSpeed((double) iValue / 100.0);
     }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void Quick3DTest::onOverlookFOVChanged(int iValue)
+{
+    m_pScene->setOverlookFOV((double) iValue);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -716,4 +655,11 @@ void Quick3DTest::onDepthClicked()
 void Quick3DTest::onOverlookClicked()
 {
     m_pScene->setOverlookScene(ui.m_chkOverlook->checkState() == Qt::Checked);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void Quick3DTest::onEditClicked()
+{
+    m_pScene->setEditMode(ui.m_chkEdit->checkState() == Qt::Checked);
 }

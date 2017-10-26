@@ -1,22 +1,17 @@
 
 #pragma once
 
-// qt-plus
-#include "CInterpolator.h"
+// Qt
+#include <QImage>
 
 // Application
 #include "quick3d_global.h"
-#include "CQ3DConstants.h"
-#include "CPhysicalComponent.h"
-
-//-------------------------------------------------------------------------------------------------
-// Forward declarations
-
-class C3DScene;
+#include "CWorldTerrain.h"
+#include "CInterpolator.h"
 
 //-------------------------------------------------------------------------------------------------
 
-class QUICK3D_EXPORT CWing : public CPhysicalComponent
+class QUICK3D_EXPORT CWorldTerrainMap : public CComponent
 {
 public:
 
@@ -27,51 +22,51 @@ public:
     //!
     static CComponent* instantiator(C3DScene* pScene);
 
-    //!
-    CWing(C3DScene* pScene);
+    //! Constructor using a scene
+    CWorldTerrainMap(C3DScene* pScene);
 
-    //!
-    virtual ~CWing();
+    //! Destructor
+    virtual ~CWorldTerrainMap();
 
     //-------------------------------------------------------------------------------------------------
     // Setters
     //-------------------------------------------------------------------------------------------------
 
     //!
-    virtual void setAileronAngle_norm(double dValue);
+    void setTerrain(QSP<CWorldTerrain> pTerrain);
 
     //!
-    virtual void setAileronAngle_rad(double dAngle);
+    void setImageSize(QSize sSize);
 
     //!
-    virtual void setFlapsPosition_norm(double dValue);
+    void setCenter(CGeoloc gCenter);
+
+    //!
+    void setScale(double dScale);
 
     //-------------------------------------------------------------------------------------------------
     // Getters
     //-------------------------------------------------------------------------------------------------
 
     //!
-    virtual double flapsPosition_norm() const { return m_dFlapsPosition_norm; }
+    const QImage& image() const;
 
     //-------------------------------------------------------------------------------------------------
     // Overridden methods
     //-------------------------------------------------------------------------------------------------
 
     //!
-    virtual QString getClassName() const Q_DECL_OVERRIDE { return ClassName_CWing; }
+    virtual QString getClassName() const Q_DECL_OVERRIDE { return ClassName_CWorldTerrainMap; }
 
-    //!
+    //! Loads this object's parameters
     virtual void loadParameters(const QString& sBaseFile, const CXMLNode& xComponent) Q_DECL_OVERRIDE;
-
-    //!
-    virtual void update(double dDeltaTime) Q_DECL_OVERRIDE;
-
-    //! Dumps contents to a stream
-    virtual void dump(QTextStream& stream, int iIdent) Q_DECL_OVERRIDE;
 
     //-------------------------------------------------------------------------------------------------
     // Control methods
     //-------------------------------------------------------------------------------------------------
+
+    //!
+    void updateImage();
 
     //-------------------------------------------------------------------------------------------------
     // Properties
@@ -79,13 +74,10 @@ public:
 
 protected:
 
-    double                  m_dArea_m2;
-    double                  m_dWingAngle_rad;
-    double                  m_dAileronArea_m2;
-    double                  m_dAileronMaxPositiveAngle_rad;
-    double                  m_dAileronAngle_rad;
-    double                  m_dFlapsPosition_norm;
-    Math::CVector3          m_vAileronPosition;
-    CInterpolator<double>   m_iBodyAirflowDotLiftFactor;
-    CInterpolator<double>   m_iBodyAirflowDotAileronLiftFactor;
+    CInterpolator<Math::CVector3>   m_iColors;
+    QSP<CWorldTerrain>              m_pTerrain;
+    CGeoloc                         m_gCenter;
+    QImage*                         m_pImage;
+    QSize                           m_sImageSize;
+    double                          m_dScale;
 };

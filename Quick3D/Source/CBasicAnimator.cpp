@@ -22,8 +22,6 @@ CComponent* CBasicAnimator::instantiator(C3DScene* pScene)
 CBasicAnimator::CBasicAnimator(C3DScene* pScene)
     : CAnimator(pScene)
 {
-    LOG_DEBUG("CBasicAnimator::CBasicAnimator()");
-
     m_pTranslationFrame = nullptr;
     m_pRotationFrame = nullptr;
 }
@@ -32,17 +30,11 @@ CBasicAnimator::CBasicAnimator(C3DScene* pScene)
 
 CBasicAnimator::~CBasicAnimator()
 {
-    LOG_DEBUG("CBasicAnimator::CBasicAnimator()");
-
     if (m_pTranslationFrame != nullptr)
-    {
         delete m_pTranslationFrame;
-    }
 
     if (m_pRotationFrame != nullptr)
-    {
         delete m_pRotationFrame;
-    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -61,7 +53,7 @@ void CBasicAnimator::addRotationStep(CBasicAnimationStep value)
 
 //-------------------------------------------------------------------------------------------------
 
-void CBasicAnimator::loadParameters(const QString& sBaseFile, CXMLNode xNode)
+void CBasicAnimator::loadParameters(const QString& sBaseFile, const CXMLNode& xNode)
 {
     CAnimator::loadParameters(sBaseFile, xNode);
 

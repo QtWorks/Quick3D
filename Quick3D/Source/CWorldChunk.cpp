@@ -18,17 +18,17 @@ using namespace Math;
 
 CWorldChunk::CWorldChunk(C3DScene* pScene, CWorldTerrain* pAutoTerrain, CHeightField* pContainer)
     : CComponent(pScene)
+    , m_mMutex(QMutex::Recursive)
     , m_pAutoTerrain(pAutoTerrain)
     , m_pTerrain(nullptr)
     , m_pWater(nullptr)
     , m_pContainer(pContainer)
-    , m_mMutex(QMutex::Recursive)
     , m_dDistance(0.0)
     , m_bOK(false)
 {
     CComponent::incComponentCounter(ClassName_CWorldChunk);
 
-    m_tLastUsed = QDateTime::currentDateTime();
+    setUsedNow();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ CWorldChunk::~CWorldChunk()
     {
         QMutexLocker locker(&m_mMutex);
 
-        LOG_DEBUG(QString("Deleting %1 CWorldChunk::CBoundedMeshInstances for tile at lat %2, lon %3")
+        LOG_METHOD_DEBUG(QString("Deleting %1 CWorldChunk::CBoundedMeshInstances for tile at lat %2, lon %3")
                   .arg(m_vBoundedMeshes.count())
                   .arg(geoloc().Latitude)
                   .arg(geoloc().Longitude)
@@ -227,56 +227,56 @@ bool CWorldChunk::operator < (const CWorldChunk& other) const
 
 void CWorldChunk::paint(CRenderContext* pContext)
 {
-    // CVector3 vPosition = pContext->internalCameraMatrix() * getWorldBounds().center();
-    // double dRadius = getWorldBounds().radius();
+    // CVector3 vPosition = pContext->internalCameraMatrix() * worldBounds().center();
+    // double dRadius = worldBounds().radius();
 
-    m_tLastUsed = QDateTime::currentDateTime();
+    setUsedNow();
 
-    /*
-    if (vPosition.getMagnitude() < 10000.0)
+    if (pContext->scene()->boundsOnly())
     {
-        getWorldBounds().addSegments(pContext->scene());
+        worldBounds().addSegments(pContext->scene());
     }
-    */
-
-    // Paint chunk if containing sphere is within the viewing frustum
-    // if (pContext->scene()->getFrustumCheck() == false || pContext->camera()->contains(vPosition, dRadius))
+    else
     {
-        // pContext->tStatistics.m_iNumFrustumTests++;
-
-        if (m_pTerrain && m_pTerrain->isOK())
+        // Paint chunk if containing sphere is within the viewing frustum
+        // if (pContext->scene()->getFrustumCheck() == false || pContext->camera()->contains(vPosition, dRadius))
         {
-            CMaterial* pMaterial = m_pAutoTerrain->material();
+            // pContext->tStatistics.m_iNumFrustumTests++;
 
-            CTiledMaterial* pTiled = dynamic_cast<CTiledMaterial*>(pMaterial);
-
-            if (pTiled != nullptr)
+            if (m_pTerrain && m_pTerrain->isOK())
             {
-                pTiled->setCurrentPositionAndLevel(m_gOriginalGeoloc, m_pTerrain->level());
+                CMaterial* pMaterial = m_pAutoTerrain->material();
+
+                CTiledMaterial* pTiled = dynamic_cast<CTiledMaterial*>(pMaterial);
+
+                if (pTiled != nullptr)
+                {
+                    pTiled->setCurrentPositionAndLevel(m_gOriginalGeoloc, m_pTerrain->level());
+                }
+
+                m_pTerrain->paint(pContext);
             }
 
-            m_pTerrain->paint(pContext);
-        }
-
-        if (m_pWater && m_pWater->isOK())
-        {
-            glDisable(GL_CULL_FACE);
-
-            m_pWater->paint(pContext);
-
-            glEnable(GL_CULL_FACE);
-        }
-
-        if (m_bOK)
-        {
-            foreach (CBoundedMeshInstances* pBoundedMeshInstance, m_vBoundedMeshes)
+            if (m_pWater && m_pWater->isOK())
             {
-                pBoundedMeshInstance->paint(pContext);
+                glDisable(GL_CULL_FACE);
+
+                m_pWater->paint(pContext);
+
+                glEnable(GL_CULL_FACE);
             }
 
-            foreach (QString sBushName, m_vBushMeshes.keys())
+            if (m_bOK)
             {
-                m_vBushMeshes[sBushName]->paint(pContext, this);
+                foreach (CBoundedMeshInstances* pBoundedMeshInstance, m_vBoundedMeshes)
+                {
+                    pBoundedMeshInstance->paint(pContext);
+                }
+
+                foreach (QString sBushName, m_vBushMeshes.keys())
+                {
+                    m_vBushMeshes[sBushName]->paint(pContext, this);
+                }
             }
         }
     }
@@ -315,7 +315,7 @@ bool CWorldChunk::drawable()
 bool CWorldChunk::isEmpty()
 {
     bool bWaitingForBuild = CWorkerManager::getInstance()->containsWorker(this);
-    bool bSelfEmpty = (bWaitingForBuild == false && (!m_pTerrain));
+    bool bSelfEmpty = (bWaitingForBuild == false && m_pTerrain == nullptr);
     bool bChildrenEmpty = true;
 
     foreach (QSP<CComponent> pChildComponent, m_vChildren)
@@ -380,7 +380,7 @@ void CWorldChunk::clearTerrain()
 
     if (m_pTerrain != nullptr)
     {
-        LOG_DEBUG(QString("Deleting CWorldChunk::m_pTerrain (%1, %2, %3)")
+        LOG_METHOD_DEBUG(QString("Deleting CWorldChunk::m_pTerrain (%1, %2, %3)")
                   .arg(gChunkPosition.Latitude)
                   .arg(gChunkPosition.Longitude)
                   .arg(m_pTerrain->name())
@@ -391,7 +391,7 @@ void CWorldChunk::clearTerrain()
 
     if (m_pWater != nullptr)
     {
-        LOG_DEBUG(QString("Deleting CWorldChunk::m_pWater (%1, %2, %3)")
+        LOG_METHOD_DEBUG(QString("Deleting CWorldChunk::m_pWater (%1, %2, %3)")
                   .arg(gChunkPosition.Latitude)
                   .arg(gChunkPosition.Longitude)
                   .arg(m_pWater->name())
@@ -436,7 +436,7 @@ void CWorldChunk::work()
 
                     CBoundingBox bBox = createBoundsForTerrain(gPosition, gSize, 1000.0);
 
-                    LOG_DEBUG(QString("Creating CWorldChunk::CBoundedMeshInstances for tile at lat %1, lon %2")
+                    LOG_METHOD_DEBUG(QString("Creating CWorldChunk::CBoundedMeshInstances for tile at lat %1, lon %2")
                               .arg(geoloc().Latitude)
                               .arg(geoloc().Longitude)
                               );
@@ -532,7 +532,7 @@ void CWorldChunk::dump(QTextStream& stream, int iIdent)
     dumpIdent(stream, iIdent, QString("Original geoloc : %1").arg(m_gOriginalGeoloc.toString()));
     dumpIdent(stream, iIdent, QString("Original size : %1").arg(m_gOriginalSize.toString()));
     dumpIdent(stream, iIdent, QString("Size : %1").arg(m_gSize.toString()));
-    dumpIdent(stream, iIdent, QString("Last used : %1").arg(m_tLastUsed.toString()));
+    dumpIdent(stream, iIdent, QString("Last used seconds : %1").arg(m_tLastUsed.secsTo(QDateTime::currentDateTime())));
     dumpIdent(stream, iIdent, QString("Distance : %1").arg(m_dDistance));
     dumpIdent(stream, iIdent, QString("Terrain :"));
 

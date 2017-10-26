@@ -3,7 +3,6 @@
 #include "CLogger.h"
 
 // Application
-#include "CRessourcesManager.h"
 #include "C3DScene.h"
 #include "CComponentFactory.h"
 #include "CWorldTerrain.h"
@@ -32,7 +31,7 @@ using namespace Math;
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Instantiates a new CWorldTerrain.
+    Instantiates a new CWorldTerrain using \a pScene.
 */
 CComponent* CWorldTerrain::instantiator(C3DScene* pScene)
 {
@@ -66,7 +65,7 @@ CWorldTerrain::CWorldTerrain(C3DScene* pScene, CGeoloc gCameraPosition, CHeightF
 
     if (m_bGenerateNow)
     {
-        LOG_DEBUG("CWorldTerrain::CWorldTerrain() : Generating terrain now");
+        LOG_METHOD_DEBUG("Generating terrain now");
 
         if (pScene->viewports().count() > 0 && pScene->viewports()[0]->camera())
         {
@@ -114,9 +113,10 @@ void CWorldTerrain::setTerrainResolution(int value)
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Loads the properties of this terrain from \a xComponent.
+    Loads the properties of this component from \a xComponent. \br\br
+    \a sBaseFile is the file name from which it is loaded.
 */
-void CWorldTerrain::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CWorldTerrain::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CComponent::loadParameters(sBaseFile, xComponent);
 
@@ -207,6 +207,31 @@ void CWorldTerrain::loadParameters(const QString& sBaseFile, CXMLNode xComponent
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Solves the links in this component after it has been loaded from an object file (XML or JSON). \br\br
+    \a pScene is the scene containing this component.
+*/
+void CWorldTerrain::solveLinks(C3DScene* pScene)
+{
+    CComponent::solveLinks(pScene);
+
+    if (m_pRoot != nullptr)
+    {
+        m_pRoot->solveLinks(pScene);
+    }
+
+    foreach (QSP<CComponent> pGenerator, m_vGenerators)
+    {
+        pGenerator->solveLinks(pScene);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+/*!
+    Clears the links in this component and its children. \br\br
+    \a pScene is the scene containing this component.
+*/
 void CWorldTerrain::clearLinks(C3DScene* pScene)
 {
     CComponent::clearLinks(pScene);
@@ -217,6 +242,11 @@ void CWorldTerrain::clearLinks(C3DScene* pScene)
     }
 
     m_pRoot.reset();
+
+    foreach (QSP<CComponent> pGenerator, m_vGenerators)
+    {
+        pGenerator->clearLinks(pScene);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -306,6 +336,10 @@ void CWorldTerrain::buildRoot(CRenderContext* pContext)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Returns \c true if the level of detail in \a iLevel is enough for the chunk in \a pChunk. \br\br
+    \a pContext is the rendering context.
+*/
 bool CWorldTerrain::enoughDetail(QSP<CWorldChunk> pChunk, CRenderContext* pContext, int iLevel)
 {
     // double dDistance = (pContext->camera()->getWorldPosition() - pChunk->getWorldBounds().center()).getMagnitude();
@@ -318,6 +352,12 @@ bool CWorldTerrain::enoughDetail(QSP<CWorldChunk> pChunk, CRenderContext* pConte
                 iLevel == 0
                 )
             && iLevel < m_iLevels;
+
+//    return (
+//                (pChunk->worldBounds().closestDistance(pContext->camera()->worldPosition()) > 2000.0) ||
+//                iLevel == 0
+//                )
+//            && iLevel < m_iLevels;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -325,7 +365,7 @@ bool CWorldTerrain::enoughDetail(QSP<CWorldChunk> pChunk, CRenderContext* pConte
 /*!
     Called by paint() to build necessary terrain patches given the camera location. \br\br
     \a pChunk is any chunk in the chunk tree of the terrain. \br
-    \a pContext is the rendering context.
+    \a pContext is the rendering context. \br
     \a iLevel is the depth in the chunk tree.
 */
 void CWorldTerrain::buildRecurse(QSP<CWorldChunk> pChunk, CRenderContext* pContext, int iLevel)
@@ -336,16 +376,15 @@ void CWorldTerrain::buildRecurse(QSP<CWorldChunk> pChunk, CRenderContext* pConte
     CGeoloc gChunkPosition = pChunk->geoloc();
     CGeoloc gChunkSize = pChunk->size();
 
-    // On décide si ce niveau de détail est suffisant
     // Decide whether this level of detail is enough
     bool bStayHere = enoughDetail(pChunk, pContext, iLevel);
 
     if (bStayHere)
     {
         // Create terrain for the chunk if needed
-        if (!pChunk->terrain())
+        if (pChunk->terrain() == nullptr)
         {
-            LOG_DEBUG(QString("Creating terrain for tile at lat %1, lon %2, level %3")
+            LOG_METHOD_DEBUG(QString("Creating terrain for tile at lat %1, lon %2, level %3")
                       .arg(gChunkPosition.Latitude)
                       .arg(gChunkPosition.Longitude)
                       .arg(iLevel)
@@ -403,74 +442,159 @@ void CWorldTerrain::buildRecurse(QSP<CWorldChunk> pChunk, CRenderContext* pConte
     }
     else
     {
-        // Création des sous-chunks si besoin
+        // Create sub chunks if required
         if (pChunk->childComponents().count() == 0)
         {
-            LOG_DEBUG(QString("Creating sub-quads for tile at lat %1, lon %2, level %3")
+            LOG_METHOD_DEBUG(QString("Creating sub-quads for tile at lat %1, lon %2, level %3")
                       .arg(gChunkPosition.Latitude)
                       .arg(gChunkPosition.Longitude)
                       .arg(iLevel)
                       );
 
             CGeoloc gStart(
-                        gOriginalChunkPosition.Latitude - gOriginalChunkSize.Latitude * 0.5,
-                        gOriginalChunkPosition.Longitude - gOriginalChunkSize.Longitude * 0.5,
+                        gOriginalChunkPosition.Latitude - gOriginalChunkSize.Latitude * 0.50,
+                        gOriginalChunkPosition.Longitude - gOriginalChunkSize.Longitude * 0.50,
                         0.0
                         );
 
             CGeoloc gSize(
-                        gOriginalChunkSize.Latitude * 0.5,
-                        gOriginalChunkSize.Longitude * 0.5,
+                        gOriginalChunkSize.Latitude * 0.50,
+                        gOriginalChunkSize.Longitude * 0.50,
                         0.0
                         );
 
-            // Create for child chunks
-            QSP<CWorldChunk> pChild1(new CWorldChunk(m_pScene, this, this));
-            QSP<CWorldChunk> pChild2(new CWorldChunk(m_pScene, this, this));
-            QSP<CWorldChunk> pChild3(new CWorldChunk(m_pScene, this, this));
-            QSP<CWorldChunk> pChild4(new CWorldChunk(m_pScene, this, this));
+//            if (iLevel == m_iLevels)
+//            {
+//                // Create for child chunks
+//                QSP<CWorldChunk> pChild1(new CWorldChunk(m_pScene, this, this));
+//                QSP<CWorldChunk> pChild2(new CWorldChunk(m_pScene, this, this));
+//                QSP<CWorldChunk> pChild3(new CWorldChunk(m_pScene, this, this));
+//                QSP<CWorldChunk> pChild4(new CWorldChunk(m_pScene, this, this));
+//                QSP<CWorldChunk> pChild5(new CWorldChunk(m_pScene, this, this));
+//                QSP<CWorldChunk> pChild6(new CWorldChunk(m_pScene, this, this));
+//                QSP<CWorldChunk> pChild7(new CWorldChunk(m_pScene, this, this));
+//                QSP<CWorldChunk> pChild8(new CWorldChunk(m_pScene, this, this));
 
-            // Children don't inherit transforms
-            pChild1->setInheritTransform(false);
-            pChild2->setInheritTransform(false);
-            pChild3->setInheritTransform(false);
-            pChild4->setInheritTransform(false);
+//                // Children don't inherit transforms
+//                pChild1->setInheritTransform(false);
+//                pChild2->setInheritTransform(false);
+//                pChild3->setInheritTransform(false);
+//                pChild4->setInheritTransform(false);
+//                pChild5->setInheritTransform(false);
+//                pChild6->setInheritTransform(false);
+//                pChild7->setInheritTransform(false);
+//                pChild8->setInheritTransform(false);
 
-            // Children's parent are the given chunk
-            pChild1->CComponent::setParent(QSP<CComponent>(pChunk));
-            pChild2->CComponent::setParent(QSP<CComponent>(pChunk));
-            pChild3->CComponent::setParent(QSP<CComponent>(pChunk));
-            pChild4->CComponent::setParent(QSP<CComponent>(pChunk));
+//                // Children's parent are the given chunk
+//                pChild1->CComponent::setParent(QSP<CComponent>(pChunk));
+//                pChild2->CComponent::setParent(QSP<CComponent>(pChunk));
+//                pChild3->CComponent::setParent(QSP<CComponent>(pChunk));
+//                pChild4->CComponent::setParent(QSP<CComponent>(pChunk));
+//                pChild5->CComponent::setParent(QSP<CComponent>(pChunk));
+//                pChild6->CComponent::setParent(QSP<CComponent>(pChunk));
+//                pChild7->CComponent::setParent(QSP<CComponent>(pChunk));
+//                pChild8->CComponent::setParent(QSP<CComponent>(pChunk));
 
-            // Append the chlidren to the given chunk
-            pChunk->childComponents().append(pChild1);
-            pChunk->childComponents().append(pChild2);
-            pChunk->childComponents().append(pChild3);
-            pChunk->childComponents().append(pChild4);
+//                // Append the chlidren to the given chunk
+//                pChunk->childComponents().append(pChild1);
+//                pChunk->childComponents().append(pChild2);
+//                pChunk->childComponents().append(pChild3);
+//                pChunk->childComponents().append(pChild4);
+//                pChunk->childComponents().append(pChild5);
+//                pChunk->childComponents().append(pChild6);
+//                pChunk->childComponents().append(pChild7);
+//                pChunk->childComponents().append(pChild8);
 
-            // Distribute children equally in the given chunk's extents
-            pChild1->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.25, gStart.Longitude + gOriginalChunkSize.Longitude * 0.25, 0.0));
-            pChild2->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.25, gStart.Longitude + gOriginalChunkSize.Longitude * 0.75, 0.0));
-            pChild3->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.75, gStart.Longitude + gOriginalChunkSize.Longitude * 0.25, 0.0));
-            pChild4->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.75, gStart.Longitude + gOriginalChunkSize.Longitude * 0.75, 0.0));
+//                // Distribute children equally in the given chunk's extents
+//                pChild1->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.25, gStart.Longitude + gOriginalChunkSize.Longitude * 0.125, 0.0));
+//                pChild2->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.25, gStart.Longitude + gOriginalChunkSize.Longitude * 0.375, 0.0));
+//                pChild3->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.25, gStart.Longitude + gOriginalChunkSize.Longitude * 0.625, 0.0));
+//                pChild4->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.25, gStart.Longitude + gOriginalChunkSize.Longitude * 0.875, 0.0));
+//                pChild5->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.75, gStart.Longitude + gOriginalChunkSize.Longitude * 0.125, 0.0));
+//                pChild6->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.75, gStart.Longitude + gOriginalChunkSize.Longitude * 0.375, 0.0));
+//                pChild7->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.75, gStart.Longitude + gOriginalChunkSize.Longitude * 0.625, 0.0));
+//                pChild8->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.75, gStart.Longitude + gOriginalChunkSize.Longitude * 0.875, 0.0));
 
-            // Compute transforms of children
-            pChild1->computeWorldTransform();
-            pChild2->computeWorldTransform();
-            pChild3->computeWorldTransform();
-            pChild4->computeWorldTransform();
+//                // Compute transforms of children
+//                pChild1->computeWorldTransform();
+//                pChild2->computeWorldTransform();
+//                pChild3->computeWorldTransform();
+//                pChild4->computeWorldTransform();
+//                pChild5->computeWorldTransform();
+//                pChild6->computeWorldTransform();
+//                pChild7->computeWorldTransform();
+//                pChild8->computeWorldTransform();
 
-            // Set size of children
-            pChild1->setSize(gSize);
-            pChild2->setSize(gSize);
-            pChild3->setSize(gSize);
-            pChild4->setSize(gSize);
+//                // Set size of children
+//                pChild1->setSize(gSize);
+//                pChild2->setSize(gSize);
+//                pChild3->setSize(gSize);
+//                pChild4->setSize(gSize);
+//                pChild5->setSize(gSize);
+//                pChild6->setSize(gSize);
+//                pChild7->setSize(gSize);
+//                pChild8->setSize(gSize);
 
-            // Tell children to build themselves
-            pChild1->build();
-            pChild2->build();
-            pChild3->build();
-            pChild4->build();
+//                // Tell children to build themselves
+//                pChild1->build();
+//                pChild2->build();
+//                pChild3->build();
+//                pChild4->build();
+//                pChild5->build();
+//                pChild6->build();
+//                pChild7->build();
+//                pChild8->build();
+//            }
+//            else
+            {
+                // Create for child chunks
+                QSP<CWorldChunk> pChild1(new CWorldChunk(m_pScene, this, this));
+                QSP<CWorldChunk> pChild2(new CWorldChunk(m_pScene, this, this));
+                QSP<CWorldChunk> pChild3(new CWorldChunk(m_pScene, this, this));
+                QSP<CWorldChunk> pChild4(new CWorldChunk(m_pScene, this, this));
+
+                // Children don't inherit transforms
+                pChild1->setInheritTransform(false);
+                pChild2->setInheritTransform(false);
+                pChild3->setInheritTransform(false);
+                pChild4->setInheritTransform(false);
+
+                // Children's parent are the given chunk
+                pChild1->CComponent::setParent(QSP<CComponent>(pChunk));
+                pChild2->CComponent::setParent(QSP<CComponent>(pChunk));
+                pChild3->CComponent::setParent(QSP<CComponent>(pChunk));
+                pChild4->CComponent::setParent(QSP<CComponent>(pChunk));
+
+                // Append the chlidren to the given chunk
+                pChunk->childComponents().append(pChild1);
+                pChunk->childComponents().append(pChild2);
+                pChunk->childComponents().append(pChild3);
+                pChunk->childComponents().append(pChild4);
+
+                // Distribute children equally in the given chunk's extents
+                pChild1->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.25, gStart.Longitude + gOriginalChunkSize.Longitude * 0.25, 0.0));
+                pChild2->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.25, gStart.Longitude + gOriginalChunkSize.Longitude * 0.75, 0.0));
+                pChild3->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.75, gStart.Longitude + gOriginalChunkSize.Longitude * 0.25, 0.0));
+                pChild4->setGeoloc(CGeoloc(gStart.Latitude + gOriginalChunkSize.Latitude * 0.75, gStart.Longitude + gOriginalChunkSize.Longitude * 0.75, 0.0));
+
+                // Compute transforms of children
+                pChild1->computeWorldTransform();
+                pChild2->computeWorldTransform();
+                pChild3->computeWorldTransform();
+                pChild4->computeWorldTransform();
+
+                // Set size of children
+                pChild1->setSize(gSize);
+                pChild2->setSize(gSize);
+                pChild3->setSize(gSize);
+                pChild4->setSize(gSize);
+
+                // Tell children to build themselves
+                pChild1->build();
+                pChild2->build();
+                pChild3->build();
+                pChild4->build();
+            }
         }
 
         // Recurse in child chunks
@@ -489,10 +613,7 @@ void CWorldTerrain::paintRecurse(QVector<QSP<CWorldChunk> >& vChunkCollect, CRen
 {
     CGeoloc gChunkPosition = pChunk->geoloc();
 
-    // On décide si ce niveau de détail est suffisant
-    // Decide whether this level of detail is enough
     bool bStayHere = enoughDetail(pChunk, pContext, iLevel);
-
     bool bChildrenDrawable = true;
 
     foreach (QSP<CComponent> pChildComponent, pChunk->childComponents())
@@ -522,7 +643,7 @@ void CWorldTerrain::paintRecurse(QVector<QSP<CWorldChunk> >& vChunkCollect, CRen
             vChunkCollect.append(pChunk);
 
             // Get rid of unneeded water
-            if (pChunk->water() && pChunk->terrain()->allHeightsOverSea())
+            if (pChunk->water() != nullptr && pChunk->terrain()->allHeightsOverSea())
             {
                 pChunk->setWater(QSP<CTerrain>());
             }
@@ -532,7 +653,7 @@ void CWorldTerrain::paintRecurse(QVector<QSP<CWorldChunk> >& vChunkCollect, CRen
             {
                 QSP<CWorldChunk> pChild = QSP_CAST(CWorldChunk, pChunk->childComponents()[iIndex]);
 
-                if (pChild && pChild->isEmpty())
+                if (pChild != nullptr && pChild->isEmpty())
                 {
                     pChunk->childComponents().remove(iIndex);
                     iIndex--;
@@ -620,6 +741,10 @@ void CWorldTerrain::collectGarbageRecurse(QSP<CWorldChunk> pChunk)
 
 //-------------------------------------------------------------------------------------------------
 
+/*!
+    Returns the height at the specified \a gPosition. \br\br
+    \a pRigidness, if not nullptr, is filled with the terrain rigidness at the specified location.
+*/
 double CWorldTerrain::getHeightAt(const CGeoloc& gPosition, double* pRigidness)
 {
     if (m_pRoot != nullptr)
@@ -690,26 +815,40 @@ double CWorldTerrain::getHeightAtRecurse(const CGeoloc& gPosition, QSP<CWorldChu
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Flattens terrain at the specified \a gPosition, to the extents of \a dRadius.
+    Flattens terrain at the specified \a gPosition, to the extents of \a dRadius_m in meters.
 */
-void CWorldTerrain::flatten(const CGeoloc& gPosition, double dRadius)
+void CWorldTerrain::flatten(const CGeoloc& gPosition, double dRadius_m)
 {
-    /*
-    foreach (ChunkMap map, m_vChunks)
+    if (m_pRoot != nullptr)
     {
-        if (map.pChunk)
-        {
-            if (map.pChunk->getWorldBounds().contains(gPosition, dRadius))
-            {
-                map.pChunk->flatten(gPosition, dRadius);
-            }
-        }
+        return flattenRecurse(m_pRoot, gPosition, dRadius_m);
     }
-    */
 }
 
 //-------------------------------------------------------------------------------------------------
 
+void CWorldTerrain::flattenRecurse(QSP<CWorldChunk> pChunk, const CGeoloc& gPosition, double dRadius_m)
+{
+    if (pChunk->terrain() != nullptr)
+    {
+    }
+
+    foreach (QSP<CComponent> pChildComponent, pChunk->childComponents())
+    {
+        QSP<CWorldChunk> pChild = QSP_CAST(CWorldChunk, pChildComponent);
+
+        if (pChild != nullptr)
+        {
+            flattenRecurse(pChild, gPosition, dRadius_m);
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+/*!
+    Checks if \a ray intersects this component.
+*/
 RayTracingResult CWorldTerrain::intersect(Math::CRay3 ray)
 {
     if (m_pRoot != nullptr)
@@ -723,7 +862,7 @@ RayTracingResult CWorldTerrain::intersect(Math::CRay3 ray)
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Checks if \a ray intersects this terrain.
+    Checks if \a ray intersects this terrain, using \a pChunk as current chunk.
 */
 RayTracingResult CWorldTerrain::intersectRecurse(QSP<CWorldChunk> pChunk, const Math::CRay3& ray) const
 {
@@ -762,8 +901,9 @@ RayTracingResult CWorldTerrain::intersectRecurse(QSP<CWorldChunk> pChunk, const 
 void CWorldTerrain::dump(QTextStream& stream, int iIdent)
 {
     dumpIdent(stream, iIdent, QString("[CWorldTerrain]"));
+    dumpIdent(stream, iIdent, QString("GenerateNow : %1").arg(m_bGenerateNow));
     dumpIdent(stream, iIdent, QString("Levels : %1").arg(m_iLevels));
-    dumpIdent(stream, iIdent, QString("Terrain res : %1").arg(m_iTerrainResolution));
+    dumpIdent(stream, iIdent, QString("Terrain resolution : %1").arg(m_iTerrainResolution));
     dumpIdent(stream, iIdent, QString("Root :"));
 
     if (m_pRoot != nullptr)

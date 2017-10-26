@@ -88,7 +88,7 @@ CCamera& CCamera::operator = (const CCamera& target)
 
 //-------------------------------------------------------------------------------------------------
 
-void CCamera::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CCamera::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     CPhysicalComponent::loadParameters(sBaseFile, xComponent);
 
@@ -276,7 +276,7 @@ void CCamera::render(C3DScene* pScene, CViewport* pViewport, bool bForceWideFOV,
                     );
 
         mCameraProjection = CCamera::getQtProjectionMatrix(
-                    DEFAULT_FOV,
+                    pScene->overlookFOV(),
                     (double) iWidth / (double) iHeight,
                     m_dMinDistance,
                     m_dMaxDistance
@@ -523,8 +523,8 @@ void CCamera::renderDepth_CubeMapped
 
         int iRenderMapSize = 265;	// Puissance de deux
 
-        LOG_DEBUG(
-                    QString("CCamera::renderDepth_CubeMapped() : Rendering %1 x %2 image tiles of %3 pixels resolution")
+        LOG_METHOD_DEBUG(
+                    QString("Rendering %1 x %2 image tiles of %3 pixels resolution")
                     .arg(RENDER_SUBDIVISIONS_PAN)
                     .arg(RENDER_SUBDIVISIONS_TILT)
                     .arg(iRenderMapSize)
@@ -913,4 +913,18 @@ CRay3 CCamera::screenPointToWorldRay(CViewport* pViewport, CVector2 vPoint)
     rResult.vOrigin = worldPosition();
 
     return rResult;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CCamera::dump(QTextStream& stream, int iIdent)
+{
+    dumpIdent(stream, iIdent, QString("[CCamera]"));
+    dumpIdent(stream, iIdent, QString("FOV : %1").arg(m_dFOV));
+    dumpIdent(stream, iIdent, QString("Focus : %1").arg(m_dFocus));
+    dumpIdent(stream, iIdent, QString("Gain : %1").arg(m_dGain));
+    dumpIdent(stream, iIdent, QString("Min distance : %1").arg(m_dMinDistance));
+    dumpIdent(stream, iIdent, QString("Max distance : %1").arg(m_dMaxDistance));
+
+    CPhysicalComponent::dump(stream, iIdent);
 }

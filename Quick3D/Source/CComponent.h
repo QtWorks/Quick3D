@@ -8,18 +8,20 @@
 #include <QPainter>
 #include <QImage>
 #include <QSharedData>
-#include <QExplicitlySharedDataPointer>
 #include <QtOpenGL>
+
+// qt-plus
+#include "CMemoryMonitor.h"
 
 // Application
 #include "quick3d_global.h"
+#include "ILoadable.h"
+#include "CQ3DConstants.h"
 #include "CVector3.h"
 #include "CMatrix4.h"
 #include "CRay3.h"
-#include "CGeoloc.h"
+#include "CGeolocalized.h"
 #include "CXMLNode.h"
-#include "ILoadable.h"
-#include "CQ3DConstants.h"
 #include "CGLExtension.h"
 #include "CRenderContext.h"
 #include "CNamed.h"
@@ -29,11 +31,6 @@
 #include "CBoundingBox.h"
 #include "CHeightField.h"
 #include "CTexture.h"
-
-//-------------------------------------------------------------------------------------------------
-
-#define     QSP             QExplicitlySharedDataPointer
-#define     QSP_CAST(T,O)   QSP<T>(dynamic_cast<T*>(O.data()))
 
 //-------------------------------------------------------------------------------------------------
 
@@ -74,8 +71,17 @@ class CController;
 
 //-------------------------------------------------------------------------------------------------
 
-class QUICK3D_EXPORT CComponent : public QSharedData, public CNamed, public CParented, public CExpendable, public CDumpable, public ILoadable
+class QUICK3D_EXPORT CComponent
+        : public QSharedData
+        , public CNamed
+        , public CGeolocalized
+        , public CParented
+        , public CExpendable
+        , public CDumpable
+        , public ILoadable
 {
+    DECLARE_MEMORY_MONITORED
+
 public:
 
     //-------------------------------------------------------------------------------------------------
@@ -120,7 +126,7 @@ public:
     void setParent(QSP<CComponent> pParent);
 
     //! Définit la géolocalisation
-    virtual void setGeoloc(CGeoloc gGeoloc);
+    virtual void setGeoloc(CGeoloc gGeoloc) Q_DECL_OVERRIDE;
 
     //! Définit la position d'origine
     void setPosition(Math::CVector3 vPosition);
@@ -205,7 +211,7 @@ public:
     QSP<CComponent> root();
 
     //! Returns the object's geo-location
-    virtual CGeoloc geoloc() const;
+    virtual CGeoloc geoloc() const Q_DECL_OVERRIDE;
 
     //! Returns the rotation in the ECEF frame (Earth-centered earth-fixed)
     virtual Math::CVector3 ECEFRotation() const;
@@ -265,12 +271,6 @@ public:
     // Operators
     //-------------------------------------------------------------------------------------------------
 
-    //!
-    void* operator new (size_t size);
-
-    //!
-    void operator delete(void* ptr, size_t size);
-
     //! Assign operator
     CComponent& operator = (const CComponent& target);
 
@@ -279,7 +279,7 @@ public:
     //-------------------------------------------------------------------------------------------------
 
     //! Loads this object's parameters
-    virtual void loadParameters(const QString& sBaseFile, CXMLNode xComponent);
+    virtual void loadParameters(const QString& sBaseFile, const CXMLNode& xComponent);
 
     //! Solves the links of this object
     virtual void solveLinks(C3DScene* pScene);
@@ -308,50 +308,53 @@ public:
     //! Updates this object using the elapsed time since last update
     virtual void update(double dDeltaTime);
 
-    //! Appel de la méthode update des enfants
+    //! Calls the update method for child components
     virtual void postUpdate(double dDeltaTime);
 
     //!
     virtual void updateTexture(CTexture* pTexture, double dDeltaTime);
 
-    //! Retourne la boite englobante locale
+    //! Returns the local bounding box
     virtual CBoundingBox bounds();
 
-    //! Retourne la boite englobante "monde"
+    //! Returns the world bounding box
     virtual CBoundingBox worldBounds();
 
     //! Ray intersection
     virtual Math::RayTracingResult intersect(Math::CRay3 ray);
 
-    //! Inverse les vecteurs normaux des polygones
+    //! Flips all normals of this component (does something if component is a mesh)
     virtual void flipNormals();
 
-    //! Définit les tranformations monde (normalement calculées automatiquement)
+    //! Explicitely set world transform (which is otherwise computed automatically)
     virtual void setWorldTransform(const Math::CMatrix4& value);
 
-    //! Transforme les sommets
+    //! Transforms all vertices of this component (does something if component is a mesh)
     void transformVertices(const Math::CMatrix4& matrix);
 
-    //! Dumps contents to a stream
-    virtual void dump(QTextStream& stream, int iIdent);
-
-    //! Calcule la matrice de transformation en coordonnées "monde"
+    //! Compute the world transform matrix
     void computeWorldTransform();
 
-    //! Sauvegarde la matrice de transformation en coordonnées "monde"
+    //! Saves the world transform matrix
     void saveTransform();
 
-    //! Restaure la matrice de transformation en coordonnées "monde"
+    //! Restores the world transform matrix
     void loadTransform();
 
-    //!
+    //! Converts a local euler rotation to the equivalent in the ECEF frame
     Math::CVector3 toECEFRotation(Math::CVector3 vRotation) const;
 
-    //! Oriente cet objet pour qu'il "regarde" vers l'objet cible (axe Z aligné vers l'objet cible)
+    //!
+    Math::CVector3 fromFrame(CComponent* pFrom, Math::CVector3 vPosition) const;
+
+    //! Makes this component look at a target, using Z axis as forward axis
     void lookAt(CComponent* pTarget);
 
     //! Copie la matrice de l'objet cible dans la matrice de cet objet
     void copyTransform(const CComponent* pTarget);
+
+    //! Dumps contents to a stream
+    virtual void dump(QTextStream& stream, int iIdent) Q_DECL_OVERRIDE;
 
     //-------------------------------------------------------------------------------------------------
     // Static methods
@@ -365,7 +368,6 @@ public:
 
 private:
 
-    CGeoloc                     m_gGeoloc;                      // Object's geo-location
     Math::CVector3              m_vECEFRotation;                // Object's rotation in the ECEF frame (Earth-centered earth-fixed)
     Math::CVector3              m_vPosition;                    // Object's position in the NOLL frame (North-oriented local-level)
     Math::CVector3              m_vRotation;                    // Object's rotation (euler) in the NOLL frame
@@ -382,13 +384,9 @@ protected:
     QString                     m_sTag;                         // User defined tag
     C3DScene*                   m_pScene;                       // The scene to which the object belongs
     CController*                m_pController;
-    Math::CMatrix4              m_mWorldTransform;              // "World" transform of the object
-    Math::CMatrix4              m_mWorldTransformInverse;       // "World" inverse transform of the object
+    Math::CMatrix4              m_mWorldTransform;              // World transform of the object
+    Math::CMatrix4              m_mWorldTransformInverse;       // World inverse transform of the object
     Math::CMatrix4              m_mPreviousWorldTransform;
-    CGeoloc                     m_gSavedGeoloc;
-    Math::CVector3              m_vSavedPosition;
-    Math::CVector3              m_vSavedRotation;
-    Math::CVector3              m_vSavedScale;
     QVector<CHeightField*>      m_pFields;                      // The height fields of the object
     bool                        m_bVisible;                     // Is the object visible?
     bool                        m_bCastShadows;                 // Does the object cast shadows?
@@ -398,6 +396,13 @@ protected:
     bool                        m_bSelected;                    // Is the object selected?
 
     double                      m_dStatus;                      // Status of the object (0.0 = Out of service, 1.0 = Functional)
+
+    // Used by saveTransform() and loadTransform()
+
+    CGeoloc                     m_gSavedGeoloc;
+    Math::CVector3              m_vSavedPosition;
+    Math::CVector3              m_vSavedRotation;
+    Math::CVector3              m_vSavedScale;
 
     // Shared data
 

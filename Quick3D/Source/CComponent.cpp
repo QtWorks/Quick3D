@@ -1,7 +1,6 @@
 
 // qt-plus
 #include "CLogger.h"
-#include "CMemoryMonitor.h"
 
 // Application
 #include "Angles.h"
@@ -37,6 +36,8 @@
 
 using namespace Math;
 
+IMPLEMENT_MEMORY_MONITORED(CComponent, "CComponent")
+
 //-------------------------------------------------------------------------------------------------
 // Properties statiques
 
@@ -48,6 +49,7 @@ QMap<QString, int> CComponent::m_mComponentCounter;
 
 /*!
     Instantiates a new CComponent.
+    \a pScene is the scene containing the component.
 */
 CComponent* CComponent::instantiator(C3DScene* pScene)
 {
@@ -56,24 +58,9 @@ CComponent* CComponent::instantiator(C3DScene* pScene)
 
 //-------------------------------------------------------------------------------------------------
 
-void* CComponent::operator new (size_t size)
-{
-    CMemoryMonitor::getInstance()->allocBytes("CComponent", size);
-    return malloc(size);
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void CComponent::operator delete(void* ptr, size_t size)
-{
-    CMemoryMonitor::getInstance()->freeBytes("CComponent", size);
-    free(ptr);
-}
-
-//-------------------------------------------------------------------------------------------------
-
 /*!
     Constructs a CComponent with its default parameters.
+    \a pScene is the scene containing the component.
 */
 CComponent::CComponent(C3DScene* pScene)
     : m_pScene(pScene)
@@ -97,7 +84,7 @@ CComponent::CComponent(C3DScene* pScene)
     , m_dStatus(1.0)
 {
     Q_UNUSED(pScene);
-    LOG_DEBUG(QString("CComponent::CComponent() : %1").arg((quint32) this));
+    LOG_METHOD_DEBUG(QString::number((quint32) this, 16));
 
     m_iNumComponents++;
 }
@@ -109,7 +96,7 @@ CComponent::CComponent(C3DScene* pScene)
 */
 CComponent::~CComponent()
 {
-    LOG_DEBUG(QString("CComponent::~CComponent() : %1").arg((quint32) this));
+    LOG_METHOD_DEBUG(QString::number((quint32) this, 16));
 
     m_iNumComponents--;
 
@@ -216,7 +203,8 @@ void CComponent::setParent(QSP<CComponent> pParent)
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Solves the links in this component after it has been loaded from an object file (XML or JSON).
+    Solves the links in this component after it has been loaded from an object file (XML or JSON). \br\br
+    \a pScene is the scene containing this component.
 */
 void CComponent::solveLinks(C3DScene* pScene)
 {
@@ -229,7 +217,8 @@ void CComponent::solveLinks(C3DScene* pScene)
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Clears the links in this component and its children.
+    Clears the links in this component and its children. \br\br
+    \a pScene is the scene containing this component.
 */
 void CComponent::clearLinks(C3DScene* pScene)
 {
@@ -463,7 +452,6 @@ void CComponent::setScale(CVector3 vScale)
 */
 void CComponent::setAnimPosition(CVector3 vPosition)
 {
-    // Assignation de la position
     m_vAnimPosition = vPosition;
 }
 
@@ -499,7 +487,6 @@ void CComponent::setAnimRotation(CVector3 vRotation)
 */
 void CComponent::setAnimScale(CVector3 vScale)
 {
-    // Assign the scale
     m_vAnimScale = vScale;
 }
 
@@ -553,6 +540,16 @@ CVector3 CComponent::toECEFRotation(CVector3 vRotation) const
 
 //-------------------------------------------------------------------------------------------------
 
+Math::CVector3 CComponent::fromFrame(CComponent* pFrom, Math::CVector3 vPosition) const
+{
+    vPosition = pFrom->m_mWorldTransform * vPosition;
+    vPosition = m_mWorldTransformInverse * vPosition;
+
+    return vPosition;
+}
+
+//-------------------------------------------------------------------------------------------------
+
 /*!
     Copies properties of \a target to this component.
 */
@@ -581,19 +578,20 @@ CComponent& CComponent::operator = (const CComponent& target)
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Loads the properties of this component from \a xComponent.
+    Loads the properties of this component from \a xComponent. \br\br
+    \a sBaseFile is the file name from which it is loaded.
 */
-void CComponent::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
+void CComponent::loadParameters(const QString& sBaseFile, const CXMLNode& xComponent)
 {
     Q_UNUSED(sBaseFile);
 
-    CXMLNode tGeolocNode = xComponent.getNodeByTagName(ParamName_Geoloc);
-    CXMLNode tPositionNode = xComponent.getNodeByTagName(ParamName_Position);
-    CXMLNode tRotationNode = xComponent.getNodeByTagName(ParamName_Rotation);
-    CXMLNode tScaleNode = xComponent.getNodeByTagName(ParamName_Scale);
-    CXMLNode tRotationFactorNode = xComponent.getNodeByTagName(ParamName_RotationFactor);
-    CXMLNode tRotationMinimumNode = xComponent.getNodeByTagName(ParamName_RotationMinimum);
-    CXMLNode tRotationMaximumNode = xComponent.getNodeByTagName(ParamName_RotationMaximum);
+    CXMLNode xGeoloc = xComponent.getNodeByTagName(ParamName_Geoloc);
+    CXMLNode xPosition = xComponent.getNodeByTagName(ParamName_Position);
+    CXMLNode xRotation = xComponent.getNodeByTagName(ParamName_Rotation);
+    CXMLNode xScale = xComponent.getNodeByTagName(ParamName_Scale);
+    CXMLNode xRotationFactor = xComponent.getNodeByTagName(ParamName_RotationFactor);
+    CXMLNode xRotationMinimum = xComponent.getNodeByTagName(ParamName_RotationMinimum);
+    CXMLNode xRotationMaximum = xComponent.getNodeByTagName(ParamName_RotationMaximum);
 
     // Component name
 
@@ -602,80 +600,87 @@ void CComponent::loadParameters(const QString& sBaseFile, CXMLNode xComponent)
         m_sName = xComponent.attributes()[ParamName_Name];
     }
 
+    // Component tag
+
+    if (xComponent.attributes()[ParamName_Tag].isEmpty() == false)
+    {
+        m_sTag = xComponent.attributes()[ParamName_Tag];
+    }
+
     // Original position
 
-    if (tPositionNode.isEmpty() == false)
+    if (xPosition.isEmpty() == false)
     {
         setPosition(CVector3(
-                              tPositionNode.attributes()[ParamName_x].toDouble(),
-                              tPositionNode.attributes()[ParamName_y].toDouble(),
-                              tPositionNode.attributes()[ParamName_z].toDouble()
+                              xPosition.attributes()[ParamName_x].toDouble(),
+                              xPosition.attributes()[ParamName_y].toDouble(),
+                              xPosition.attributes()[ParamName_z].toDouble()
                               ));
     }
 
     // Geo-location
 
-    if (tGeolocNode.isEmpty() == false)
+    if (xGeoloc.isEmpty() == false)
     {
         setGeoloc(CGeoloc(
-                      tGeolocNode.attributes()[ParamName_Latitude].toDouble(),
-                      tGeolocNode.attributes()[ParamName_Longitude].toDouble(),
-                      tGeolocNode.attributes()[ParamName_Altitude].toDouble()
+                      xGeoloc.attributes()[ParamName_Latitude].toDouble(),
+                      xGeoloc.attributes()[ParamName_Longitude].toDouble(),
+                      xGeoloc.attributes()[ParamName_Altitude].toDouble()
                       ));
     }
 
     // Original rotation
 
-    if (tRotationNode.isEmpty() == false)
+    if (xRotation.isEmpty() == false)
     {
         setRotation(CVector3(
-                              Angles::toRad(tRotationNode.attributes()[ParamName_x].toDouble()),
-                              Angles::toRad(tRotationNode.attributes()[ParamName_y].toDouble()),
-                              Angles::toRad(tRotationNode.attributes()[ParamName_z].toDouble())
+                              Angles::toRad(xRotation.attributes()[ParamName_x].toDouble()),
+                              Angles::toRad(xRotation.attributes()[ParamName_y].toDouble()),
+                              Angles::toRad(xRotation.attributes()[ParamName_z].toDouble())
                               ));
     }
 
     // Rotation factors (allows locking one or more axes)
 
-    if (tRotationFactorNode.isEmpty() == false)
+    if (xRotationFactor.isEmpty() == false)
     {
         m_vRotationFactor = CVector3(
-                    tRotationFactorNode.attributes()[ParamName_x].toDouble(),
-                    tRotationFactorNode.attributes()[ParamName_y].toDouble(),
-                    tRotationFactorNode.attributes()[ParamName_z].toDouble()
+                    xRotationFactor.attributes()[ParamName_x].toDouble(),
+                    xRotationFactor.attributes()[ParamName_y].toDouble(),
+                    xRotationFactor.attributes()[ParamName_z].toDouble()
                     );
     }
 
     // Minimum rotation
 
-    if (tRotationMinimumNode.isEmpty() == false)
+    if (xRotationMinimum.isEmpty() == false)
     {
         m_vRotationMinimum = CVector3(
-                    Angles::toRad(tRotationMinimumNode.attributes()[ParamName_x].toDouble()),
-                    Angles::toRad(tRotationMinimumNode.attributes()[ParamName_y].toDouble()),
-                    Angles::toRad(tRotationMinimumNode.attributes()[ParamName_z].toDouble())
+                    Angles::toRad(xRotationMinimum.attributes()[ParamName_x].toDouble()),
+                    Angles::toRad(xRotationMinimum.attributes()[ParamName_y].toDouble()),
+                    Angles::toRad(xRotationMinimum.attributes()[ParamName_z].toDouble())
                     );
     }
 
     // Maximum rotation
 
-    if (tRotationMaximumNode.isEmpty() == false)
+    if (xRotationMaximum.isEmpty() == false)
     {
         m_vRotationMaximum = CVector3(
-                    Angles::toRad(tRotationMaximumNode.attributes()[ParamName_x].toDouble()),
-                    Angles::toRad(tRotationMaximumNode.attributes()[ParamName_y].toDouble()),
-                    Angles::toRad(tRotationMaximumNode.attributes()[ParamName_z].toDouble())
+                    Angles::toRad(xRotationMaximum.attributes()[ParamName_x].toDouble()),
+                    Angles::toRad(xRotationMaximum.attributes()[ParamName_y].toDouble()),
+                    Angles::toRad(xRotationMaximum.attributes()[ParamName_z].toDouble())
                     );
     }
 
     // Scale
 
-    if (tScaleNode.isEmpty() == false)
+    if (xScale.isEmpty() == false)
     {
         CVector3 vScale = CVector3(
-                    tScaleNode.attributes()[ParamName_x].toDouble(),
-                    tScaleNode.attributes()[ParamName_y].toDouble(),
-                    tScaleNode.attributes()[ParamName_z].toDouble()
+                    xScale.attributes()[ParamName_x].toDouble(),
+                    xScale.attributes()[ParamName_y].toDouble(),
+                    xScale.attributes()[ParamName_z].toDouble()
                     );
 
         if (vScale.X != 0.0 && vScale.Y != 0.0 && vScale.Z != 0.0)
@@ -719,7 +724,8 @@ void CComponent::updateItems(C3DScene* pScene)
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Renders the component. Meant to be overridden as the base implementation does nothing.
+    Renders the component. Meant to be overridden as the base implementation does nothing. \br\br
+    \a pContext is the rendering context.
 */
 void CComponent::paint(CRenderContext* pContext)
 {
@@ -808,7 +814,7 @@ void CComponent::transformVertices(const Math::CMatrix4& matrix)
 //-------------------------------------------------------------------------------------------------
 
 /*!
-    Updates the component using \a dDeltaTimeS, which is the elapsed seconds since the last frame.
+    Updates this component using \a dDeltaTimeS, which is the elapsed seconds since the last frame.
 */
 void CComponent::update(double dDeltaTimeS)
 {
@@ -941,10 +947,10 @@ double CComponent::status() const
 */
 void CComponent::saveTransform()
 {
-    m_gSavedGeoloc			= m_gGeoloc;
-    m_vSavedPosition	= m_vPosition;
-    m_vSavedRotation	= m_vRotation;
-    m_vSavedScale		= m_vScale;
+    m_gSavedGeoloc      = m_gGeoloc;
+    m_vSavedPosition    = m_vPosition;
+    m_vSavedRotation    = m_vRotation;
+    m_vSavedScale       = m_vScale;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -954,10 +960,10 @@ void CComponent::saveTransform()
 */
 void CComponent::loadTransform()
 {
-    m_gGeoloc			= m_gSavedGeoloc;
-    m_vPosition	= m_vSavedPosition;
-    m_vRotation	= m_vSavedRotation;
-    m_vScale		= m_vSavedScale;
+    m_gGeoloc       = m_gSavedGeoloc;
+    m_vPosition     = m_vSavedPosition;
+    m_vRotation     = m_vSavedRotation;
+    m_vScale        = m_vSavedScale;
 
     if (isRootObject() && m_bInheritTransform)
     {
@@ -1135,9 +1141,9 @@ void CComponent::dump(QTextStream& stream, int iIdent)
     dumpIdent(stream, iIdent, QString("Parent name : %1").arg(m_sParentName));
     dumpIdent(stream, iIdent, QString("Geoloc : %1").arg(m_gGeoloc.toString()));
     dumpIdent(stream, iIdent, QString("ECEF rotation : %1").arg(m_vECEFRotation.toString()));
-    dumpIdent(stream, iIdent, QString("Origin position : %1").arg(m_vPosition.toString()));
-    dumpIdent(stream, iIdent, QString("Origin rotation : %1").arg(m_vRotation.toString()));
-    dumpIdent(stream, iIdent, QString("Origin scale : %1").arg(m_vScale.toString()));
+    dumpIdent(stream, iIdent, QString("Position : %1").arg(m_vPosition.toString()));
+    dumpIdent(stream, iIdent, QString("Rotation : %1").arg(m_vRotation.toString()));
+    dumpIdent(stream, iIdent, QString("Scale : %1").arg(m_vScale.toString()));
     dumpIdent(stream, iIdent, QString("Animated position : %1").arg(m_vAnimPosition.toString()));
     dumpIdent(stream, iIdent, QString("Animated rotation : %1").arg(m_vAnimRotation.toString()));
     dumpIdent(stream, iIdent, QString("Animated scale : %1").arg(m_vAnimScale.toString()));

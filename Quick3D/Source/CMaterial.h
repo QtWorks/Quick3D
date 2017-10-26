@@ -9,6 +9,9 @@
 #include <QtOpenGL/QGLShaderProgram>
 #include <QGLFramebufferObject>
 
+// qt-plus
+#include "CMemoryMonitor.h"
+
 // Application
 #include "quick3d_global.h"
 #include "CNamed.h"
@@ -18,6 +21,7 @@
 #include "CQ3DConstants.h"
 #include "CVertex.h"
 #include "CTexture.h"
+#include "CDumpable.h"
 
 //-------------------------------------------------------------------------------------------------
 
@@ -34,9 +38,10 @@ class CRenderContext;
 
 //-------------------------------------------------------------------------------------------------
 
-class QUICK3D_EXPORT CMaterial : public QObject, public QSharedData, public CNamed, public ILoadable
+class QUICK3D_EXPORT CMaterial : public QObject, public QSharedData, public CNamed, public CDumpable, public ILoadable
 {
     Q_OBJECT
+    DECLARE_MEMORY_MONITORED
 
 public:
 
@@ -59,9 +64,6 @@ public:
 
     //! Sets metalness factor
     void setMetalness(double value) { m_dMetalness = value; }
-
-    //! Sets reflection factor
-    void setReflection(double value) { m_dReflection = value; }
 
     //! Sets SSS factor (Sub-surface scattering)
     void setSSSFactor(double value) { m_dSSSFactor = value; }
@@ -106,9 +108,6 @@ public:
     //! Returns a reference to the subdermal color
     Math::CVector4& subdermal() { return m_cSubdermal; }
 
-    //! Returns the reflection factor
-    double reflection() const { return m_dReflection; }
-
     //! Returns the IR factor
     double IRFactor() const { return m_dIRFactor; }
 
@@ -121,6 +120,9 @@ public:
     //! Returns a reference to the list of diffuse textures
     QVector<CTexture*>& diffuseTextures() { return m_vDiffuseTextures; }
 
+    //! Returns a reference to the list of normal textures
+    QVector<CTexture*>& normalTextures() { return m_vNormalTextures; }
+
     //! Returns texture coordinates for a given geo loc
     virtual Math::CVector2 texCoords(const CGeoloc& gPosition, int iLevel);
 
@@ -130,7 +132,7 @@ public:
 
     //! Charge les propriétés de l'objet depuis un CXMLNode
     //! Loads the object's properties from a CXMLNode
-    virtual void loadParameters(const QString& sBaseFile, CXMLNode xComponent);
+    virtual void loadParameters(const QString& sBaseFile, const CXMLNode& xComponent);
 
     //! Solves the links of this object
     virtual void solveLinks(C3DScene* pScene) Q_DECL_OVERRIDE;
@@ -157,6 +159,12 @@ public:
     //!
     void addDynamicDiffuseTexture(const QString& sName, const QImage& imgTexture);
 
+    //! Ajoute l'image spécifiée en texture normale
+    void addNormalTexture(const QString& sBaseFile, const QString& sResourceName);
+
+    //! Ajoute l'image spécifiée en texture normale
+    void addNormalTexture(const QString& sName, const QImage& imgTexture);
+
     //! Créé une texture d'ombre portée
     void createShadowTexture();
 
@@ -177,6 +185,9 @@ public:
 
     //! Applique des transformations à la géolocalisation donnée (ex: Mercator)
     virtual CGeoloc transformGeoloc(const CGeoloc& gPosition);
+
+    //! Dumps contents to a stream
+    virtual void dump(QTextStream& stream, int iIdent) Q_DECL_OVERRIDE;
 
     //!
     static Math::CVector4 black()	{ return Math::CVector4(0.0, 0.0, 0.0, 1.0); }
@@ -199,11 +210,10 @@ protected:
     double                  m_dSelfIllumination;
     double                  m_dShininess;
     double                  m_dMetalness;
-    double                  m_dReflection;
-    double                  m_dReflectionSteepness;
     double                  m_dSSSFactor;
     double                  m_dSSSRadius;
     QVector<CTexture*>      m_vDiffuseTextures;
+    QVector<CTexture*>      m_vNormalTextures;
     QGLFramebufferObject*   m_pShadowBuffer;
     double                  m_dIRFactor;
     bool                    m_bHasAlpha;

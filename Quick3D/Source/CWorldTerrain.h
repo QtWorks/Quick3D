@@ -99,17 +99,20 @@ public:
     QVector<QSP<CComponent> >& generators() { return m_vGenerators; }
 
     //-------------------------------------------------------------------------------------------------
-    // Inherited methods
+    // Overridden methods
     //-------------------------------------------------------------------------------------------------
 
     //!
     virtual QString getClassName() const Q_DECL_OVERRIDE { return ClassName_CWorldTerrain; }
 
     //!
-    virtual void loadParameters(const QString& sBaseFile, CXMLNode xComponent) Q_DECL_OVERRIDE;
+    virtual void loadParameters(const QString& sBaseFile, const CXMLNode& xComponent) Q_DECL_OVERRIDE;
+
+    //! Solves the links of this object
+    virtual void solveLinks(C3DScene* pScene) Q_DECL_OVERRIDE;
 
     //! Deletes this object's links
-    virtual void clearLinks(C3DScene* pScene);
+    virtual void clearLinks(C3DScene* pScene) Q_DECL_OVERRIDE;
 
     //!
     virtual void paint(CRenderContext* pContext) Q_DECL_OVERRIDE;
@@ -124,7 +127,7 @@ public:
     virtual double getHeightAt(const CGeoloc& gPosition, double* pRigidness = nullptr);
 
     //!
-    virtual void flatten(const CGeoloc& gPosition, double dRadius);
+    virtual void flatten(const CGeoloc& gPosition, double dRadius_m) Q_DECL_OVERRIDE;
 
     //! Ray intersection
     virtual Math::RayTracingResult intersect(Math::CRay3 ray) Q_DECL_OVERRIDE;
@@ -161,6 +164,9 @@ protected:
 
     //! Ray intersection
     Math::RayTracingResult intersectRecurse(QSP<CWorldChunk> pChunk, const Math::CRay3& ray) const;
+
+    //!
+    void flattenRecurse(QSP<CWorldChunk> pChunk, const CGeoloc& gPosition, double dRadius_m);
 
     //-------------------------------------------------------------------------------------------------
     // Properties

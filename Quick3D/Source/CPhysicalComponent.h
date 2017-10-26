@@ -15,6 +15,49 @@ class C3DScene;
 
 //-------------------------------------------------------------------------------------------------
 
+class QUICK3D_EXPORT CContactPoint
+{
+public:
+
+    //-------------------------------------------------------------------------------------------------
+    // Constructors and destructor
+    //-------------------------------------------------------------------------------------------------
+
+    //! Default constructor
+    CContactPoint()
+        : m_dRadius(0.0)
+    {
+    }
+
+    //! Constructor with parameters
+    CContactPoint(Math::CVector3 vPosition, double dRadius = 0.0)
+        : m_vPosition(vPosition)
+        , m_dRadius(dRadius)
+    {
+    }
+
+    //-------------------------------------------------------------------------------------------------
+    // Getters
+    //-------------------------------------------------------------------------------------------------
+
+    //! Returns the position
+    Math::CVector3 position() const { return m_vPosition; }
+
+    //! Returns the radius
+    double radius() const { return m_dRadius; }
+
+    //-------------------------------------------------------------------------------------------------
+    // Properties
+    //-------------------------------------------------------------------------------------------------
+
+protected:
+
+    Math::CVector3  m_vPosition;
+    double          m_dRadius;
+};
+
+//-------------------------------------------------------------------------------------------------
+
 class QUICK3D_EXPORT CPhysicalComponent : public CComponent
 {
 public:
@@ -68,7 +111,7 @@ public:
     //! Définit l'accelération angulaire en mètres/seconde/seconde
     void setAngularAcceleration_rss(Math::CVector3 value) { m_vSummedTorques_rss = value; }
 
-    //! Définit si les collisions sont activées
+    //! If bEnabled is true, collisions for the component will be computed.
     void setCollisions(bool bEnabled);
 
     //! Définit le type d'objet de collision à utiliser
@@ -78,7 +121,7 @@ public:
     // Getters
     //-------------------------------------------------------------------------------------------------
 
-    //! Retourne le nom de cette classe
+    //! Returns this object's class name
     virtual QString getClassName() const Q_DECL_OVERRIDE { return ClassName_CPhysicalComponent; }
 
     //! Retourne la trainée normalisée
@@ -118,45 +161,47 @@ public:
     // Control methods
     //-------------------------------------------------------------------------------------------------
 
-    //! Opérateur d'assignation
+    //! Assign operator
     CPhysicalComponent& operator = (const CPhysicalComponent& target);
 
     //! Loads this object's parameters
-    virtual void loadParameters(const QString& sBaseFile, CXMLNode xComponent) Q_DECL_OVERRIDE;
+    virtual void loadParameters(const QString& sBaseFile, const CXMLNode& xComponent) Q_DECL_OVERRIDE;
 
     //! Updates this object using the elapsed time since last update
     virtual void update(double dDeltaTime) Q_DECL_OVERRIDE;
 
-    //! Appel de la méthode update des enfants
+    //! Calls the update method for child components
     virtual void postUpdate(double dDeltaTimeS) Q_DECL_OVERRIDE;
+
+    //! Returns a list of contact points for this component
+    virtual QVector<CContactPoint> contactPoints();
 
     //! Dumps contents to a stream
     virtual void dump(QTextStream& stream, int iIdent);
 
-    //! Ajoute un champ de hauteurs pour cet objet
+    //! Adds a height field to this component
     void addField(CHeightField* value);
 
-    //! Arrête les calculs de physique
+    //! Removes this component from physical computations.
     void sleep();
 
-    //! Reprend les calculs de physique
+    //! Adds this component to physical computations.
     void wakeUp();
 
-    //! Ajoute une force en kilogrammes dans le repère local de l'objet, de manière excentrée
-    //! Elle peut donc produire un couple
+    //! Adds a local force to the component, relative to a position. It can also generate torque.
     void addUncenteredLocalForce_kg(Math::CVector3 vPosition, Math::CVector3 vForce_kg);
 
-    //! Ajoute une force en kilogrammes dans le repère local de l'objet
+    //! Adds a local force to the component.
     void addLocalForce_kg(Math::CVector3 vForce_kg);
 
-    //! Ajoute une force en kilogrammes dans le repère NOLL de l'objet
+    //! Adds a force to the component, expressed in the geocentric frame.
     void addForce_kg(Math::CVector3 vForce_kg);
 
-    //! Ajoute un couple en kilogrammes dans le repère local de l'objet
-    void addLocalTorque_kg(Math::CVector3 vForce_kg);
+    //! Adds a local torque to the component.
+    void addLocalTorque_kg(Math::CVector3 vTorque_kg);
 
-    //! Ajoute un couple en kilogrammes dans le repère NOLL de l'objet
-    void addTorque_kg(Math::CVector3 vForce_kg);
+    //! Adds a torque to the component, expressed in the geocentric frame.
+    void addTorque_kg(Math::CVector3 vTorque_kg);
 
     //-------------------------------------------------------------------------------------------------
     // Static methods

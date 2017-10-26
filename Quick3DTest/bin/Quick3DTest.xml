@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scene>
+    <!--
     <Camera1 Name="Man1.Head" />
     <Camera2 Name="VBCI.Pilot" />
-    <Camera2 Name="Drone01.Pilot" />
+    <Camera3 Name="Drone01.Pilot" />
     <ControlledComponent Name="Man1" />
+    -->
+
+    <Camera1 Name="Drone01.Pilot" />
+    <ControlledComponent Name="Drone01" />
+
     <!--
     <Camera1 Name="Plascoa01Pilot"/>
     <Camera2 Name="VisitorDriver"/>
@@ -20,11 +26,20 @@
     <Geoloc Latitude="5.6110" Longitude="0.3926" Altitude="0.0"/>
     <Geoloc Latitude="9.7905" Longitude="17.8018" Altitude="0.0"/>
     -->
+
     <Components>
         <Component Name="SkyBox" Class="CSkyBox" />
+
+        <Component Name="Sun" Class="CLight" Tag="SUN">
+            <Position x="0.0" y="0.0" z="0.0"/>
+            <Rotation x="0.0" y="0.0" z="0.0"/>
+            <General FOV="10.0" CastShadows="1"/>
+            <Color r="1.0" g="1.0" b="1.0"/>
+        </Component>
+
         <Component Name="Terrain" Class="CWorldTerrain">
             <Parameters>
-                <General Levels="16" Resolution="31" />
+                <General Levels="15" Resolution="31" />
                 <Functions>
                     <Function Name="ContinentsFactor">
                         <Value Type="Turbulence" InputScale="0.000001" MinClamp="0.0" MaxClamp="1.0" OutputScale="1.0" />
@@ -489,9 +504,10 @@
                 </Generators>
             </Parameters>
         </Component>
+
         <Component Name="Man1" Class="CMan">
             <Geoloc Latitude="19.237731" Longitude="10.896700" Altitude="0.0" />
-            <Rotation x="0.0" y="-30.0" z="0.0" />
+            <Rotation x="0.0" y="180.0" z="0.0" />
             <Physics PhysicsActive="1" MassKG="80" Drag="0.01" Friction="2.0" />
             <Component Name="Head" Class="CCamera">
                 <Position x="0.0" y="1.8" z="0.0" />
@@ -499,8 +515,9 @@
             </Component>
             <Controller Class="CStandardController" />
         </Component>
+
         <Component Name="Drone01" Class="CAircraft">
-            <Geoloc Latitude="19.237731" Longitude="10.896700" Altitude="0.0" />
+            <Geoloc Latitude="19.237720" Longitude="10.896720" Altitude="10.0" />
             <Rotation x="0.0" y="0.0" z="0.0" />
             <Mesh Name="SmoothingTest.obj" />
             <IR Factor="0.8" />
@@ -522,38 +539,38 @@
             </Component>
             <Component Name="Engine1" Class="CEngine">
                 <Physics CollisionsActive="0" />
-                <Position x="-0.3" y="0.0" z="0.3" />
+                <Position x="-1.0" y="0.0" z="1.0" />
                 <Rotation x="-90.0" y="0.0" z="0.0" />
-                <Physics MassKG="0.25" />
-                <Thrust MaxThrustKG="5.0" />
+                <Physics MassKG="0.1" />
+                <Thrust MaxThrustKG="10.0" />
             </Component>
             <Component Name="Engine2" Class="CEngine">
                 <Physics CollisionsActive="0" />
-                <Position x="0.3" y="0.0" z="0.3" />
+                <Position x="1.0" y="0.0" z="1.0" />
                 <Rotation x="-90.0" y="0.0" z="0.0" />
-                <Physics MassKG="0.25" />
-                <Thrust MaxThrustKG="5.0" />
+                <Physics MassKG="0.1" />
+                <Thrust MaxThrustKG="10.0" />
             </Component>
             <Component Name="Engine3" Class="CEngine">
                 <Physics CollisionsActive="0" />
-                <Position x="-0.3" y="0.0" z="-0.3" />
+                <Position x="-1.0" y="0.0" z="-1.0" />
                 <Rotation x="-90.0" y="0.0" z="0.0" />
-                <Physics MassKG="0.25" />
-                <Thrust MaxThrustKG="5.0" />
+                <Physics MassKG="0.1" />
+                <Thrust MaxThrustKG="10.0" />
             </Component>
             <Component Name="Engine4" Class="CEngine">
                 <Physics CollisionsActive="0" />
-                <Position x="0.3" y="0.0" z="-0.3" />
+                <Position x="1.0" y="0.0" z="-1.0" />
                 <Rotation x="-90.0" y="0.0" z="0.0" />
-                <Physics MassKG="0.25" />
-                <Thrust MaxThrustKG="5.0" />
+                <Physics MassKG="0.1" />
+                <Thrust MaxThrustKG="10.0" />
             </Component>
         </Component>
+
         <Component Name="Man2" Class="CMan">
-            <Geoloc Latitude="19.2379" Longitude="10.896700" Altitude="0.0"/>
+            <Geoloc Latitude="19.2379" Longitude="10.896700" Altitude="0.0" />
             <!-- <Geoloc Latitude="31.898053" Longitude="-10.668458" Altitude="0.0" /> -->
             <Rotation x="0.0" y="114.0" z="0.0" />
-            <Mesh Name="SmoothingTest.obj" />
             <Physics PhysicsActive="1" MassKG="80" Drag="0.01" Friction="2.0" />
             <Component Name="Head" Class="CCamera">
                 <Position x="0.0" y="1.8" z="0.0" />
@@ -561,8 +578,9 @@
             </Component>
             <Controller Class="CStandardController" />
         </Component>
+
         <Component Name="VBCI" Class="CTerrestrialVehicle">
-            <Geoloc Latitude="19.237430" Longitude="10.895408" Altitude="0.0" />
+            <Geoloc Latitude="19.237738" Longitude="10.896701" Altitude="0.0" />
             <Rotation x="0.0" y="0.0" z="0.0" />
             <Mesh Name="Models/VBCI.q3d">
                 <Bounds>
@@ -645,25 +663,28 @@
             </Component>
             -->
         </Component>
+
         <Component Name="Visitor2" Class="CTerrestrialVehicle">
             <Geoloc Latitude="19.2380" Longitude="10.8960" Altitude="0.0" />
             <Rotation x="0.0" y="0.0" z="0.0" />
             <Mesh Name="PVP.obj" />
             <IR Factor="0.8" />
-            <Physics MassKG="7500" SpeedMS="4.0" TurnSpeedDS="30.0" PhysicsActive="1" />
-            <Controller Class="CForceController" ForceFactor="1000.0" />
+            <Physics MassKG="7500" SpeedMS="4.0" TurnSpeedDS="30.0" Drag="0.1" Friction="2.0" PhysicsActive="1" />
+            <Controller Class="CForceController" ForceFactor="10000.0" />
             <Component Name="Driver" Class="CCamera">
                 <Physics CollisionsActive="0" />
                 <Position x="0.0" y="3.2" z="-4" />
                 <Rotation x="10.0" y="0.0" z="0.0" />
             </Component>
         </Component>
+
         <Component Name="PCC" Class="CTerrestrialVehicle">
             <Geoloc Latitude="19.2374" Longitude="10.8966" Altitude="0.0" />
             <Rotation x="0.0" y="90.0" z="0.0" />
             <Mesh Name="PCC.obj" />
             <IR Factor="0.8" />
-            <Physics SpeedMS="4.5" TurnSpeedDS="30.0" PhysicsActive="1" />
+            <Physics MassKG="7500" SpeedMS="4.5" TurnSpeedDS="30.0" Drag="0.1" Friction="2.0" PhysicsActive="1" />
+            <Controller Class="CForceController" ForceFactor="10000.0" />
             <Component Name="Light1" Class="CLight">
                 <Physics CollisionsActive="0" />
                 <Position x="0.8" y="1.0" z="3.0" />
@@ -679,6 +700,7 @@
                 <Color r="2.0" g="2.0" b="1.5" />
             </Component>
         </Component>
+
         <Component Name="Plascoa01" Class="CAircraft">
             <Geoloc Latitude="19.250000" Longitude="10.880000" Altitude="0.0" />
             <Rotation x="0.0" y="0.0" z="0.0" />
